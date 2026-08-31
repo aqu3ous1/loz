@@ -717,16 +717,42 @@ var LZ = LZ || {};
     LZ.M4.compose(m, x, y, z, 0, yaw, 0, 1, 1, 1);
     mb.setMatrix(m);
     if (o.style === 'cross') {
-      mb.box(0, 0.75, 0, 0.18, 1.5, 0.18, 2.0);
-      mb.box(0, 1.10, 0, 0.72, 0.18, 0.16, 2.0);
+      mb.tube([
+        { y: 0, rx: 0.16, rz: 0.15 }, { y: 0.9, rx: 0.11, rz: 0.10 },
+        { y: 1.52, rx: 0.10, rz: 0.09 }
+      ], 6, { v: 0.8 });
+      mb.tube([
+        { x: -0.38, y: 1.12, ry: 0.10, rz: 0.09 },
+        { x: 0.38, y: 1.12, ry: 0.10, rz: 0.09 }
+      ], 6, { axis: 'x' });
     } else {
-      mb.box(0, 0.55, 0, 0.68, 1.1, 0.22, 1.6);
-      mb.cylinder(0, 1.1, 0, 0.34, 0.30, 0.06, 8, true, 1.6);
-      mb.box(0, 0.06, 0.06, 0.86, 0.14, 0.42, 1.6);
+      /* a rounded headstone: the slab is a swept slot with a domed top and a
+         plinth, so it leans and weathers instead of reading as a grey box */
+      mb.tube([
+        { y: 0.02, rx: 0.40, rz: 0.15 },
+        { y: 0.30, rx: 0.36, rz: 0.13 },
+        { y: 0.72, rx: 0.35, rz: 0.12 },
+        { y: 1.00, rx: 0.33, rz: 0.12 },
+        { y: 1.18, rx: 0.26, rz: 0.10 },
+        { y: 1.30, rx: 0.12, rz: 0.05 }
+      ], 9, { v: 0.7, capStart: false });
+      /* an incised panel, and the plinth it stands on */
+      mb.setColorHex(0x6a6a76);
+      mb.tube([
+        { z: 0.06, y: 0.72, rx: 0.22, ry: 0.30 },
+        { z: 0.13, y: 0.72, rx: 0.20, ry: 0.28 }
+      ], 8, { axis: 'z', capStart: false });
+      mb.setColorHex(o.color === undefined ? 0xffffff : o.color);
+      mb.tube([
+        { y: -0.04, rx: 0.56, rz: 0.30 },
+        { y: 0.13, rx: 0.50, rz: 0.26 },
+        { y: 0.20, rx: 0.44, rz: 0.22 }
+      ], 9, { v: 0.8, capStart: false });
     }
     mb.setMatrix(null);
     if (b.col) b.col.add(C.box(x, y + 0.55, z, 0.36, 0.6, 0.16, { yaw: yaw, tag: o.tag || null, ref: o.ref || null }));
   };
+
 
   P.statue = function (b, x, y, z, o) {
     o = o || {};

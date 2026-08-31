@@ -16,7 +16,16 @@ var LZ = LZ || {};
     groundMats: ['grass', 'dirt', 'rock'],
     surfaces: ['grass', 'dirt', 'stone'],
     terrain: K.rolling({ seed: 5, amp: 2.2, scale: 0.025, base: 0 }),
-    env: K.env.dusk({ music: 'title' }),
+    env: (function () {
+      /* the title's own dusk: a little more ambient than the field preset, so
+         the blade and the stone read as objects rather than silhouettes */
+      var e = K.env.dusk({ music: 'title' });
+      e.light = {
+        ambient: [0.50, 0.44, 0.48], dir0: [0.6, 0.42, -0.5], col0: [0.92, 0.66, 0.44],
+        dir1: [-0.3, 0.5, 0.4], col1: [0.22, 0.24, 0.40]
+      };
+      return e;
+    })(),
     build: function (ctx) {
       var w = ctx.world;
       K.forest(ctx, { seed: 2, count: 52, x0: -38, x1: 38, z0: -38, z1: 38, minDist: 5, kind: 'mixed',
@@ -25,19 +34,47 @@ var LZ = LZ || {};
       K.rocks(ctx, { seed: 4, count: 16, x0: -34, x1: 34, z0: -34, z1: 34, minDist: 6 });
       /* a lone gravestone with the heirloom blade planted in front of it */
       P.gravestone(ctx.batch, 0, w.groundHeight(0, 0), 0, { yaw: 0.15 });
-      var gy = w.groundHeight(0.55, 1.0);
+      /* The heirloom blade planted point-down in front of the grave. It is
+         the first object the player ever sees, so the blade is a swept
+         lenticular section rather than a flat box: it has to catch the
+         sunset along its edge from any angle the camera drifts to. */
+      var sx = -1.05, sz = 1.7, K2 = 1.3;
+      var gy = w.groundHeight(sx, sz);
+      function sy(v) { return gy + v * K2; }
       var mb = ctx.batch.mb('metal');
-      mb.setColorHex(0xdfe6ef);
-      mb.taper(0.55, gy + 0.10, 1.0, 0.26, 0.085, 0.20, 0.070, 1.20, 0, 0, 2);
-      mb.setColorHex(0xf4f8ff);
-      mb.box(0.55, gy + 0.70, 1.03, 0.05, 1.10, 0.012, 2);
-      mb.setColorHex(0xd8c078);
-      mb.box(0.55, gy + 1.34, 1.0, 0.62, 0.09, 0.13, 2);
-      var hm = ctx.batch.mb('leatherDark');
-      hm.setColorHex(0x6a4a2c);
-      hm.cylinder(0.55, gy + 1.40, 1.0, 0.055, 0.06, 0.28, 6, true, 4);
-      hm.setColorHex(0xd8b850);
-      hm.sphere(0.55, gy + 1.72, 1.0, 0.07, 6, 3, 0.9);
+      mb.setColorHex(0xeef4ff);
+      mb.tube([
+        { x: sx, y: sy(0.02), z: sz, rx: 0.030 * K2, rz: 0.010 * K2 },
+        { x: sx, y: sy(0.26), z: sz, rx: 0.085 * K2, rz: 0.026 * K2 },
+        { x: sx, y: sy(0.72), z: sz, rx: 0.105 * K2, rz: 0.032 * K2 },
+        { x: sx, y: sy(1.16), z: sz, rx: 0.108 * K2, rz: 0.033 * K2 },
+        { x: sx, y: sy(1.34), z: sz, rx: 0.100 * K2, rz: 0.030 * K2 }
+      ], 6, { v: 1.4, capStart: false });
+      /* fuller down the centre of the blade */
+      mb.setColorHex(0x9fb0c4);
+      mb.tube([
+        { x: sx, y: sy(0.34), z: sz, rx: 0.030 * K2, rz: 0.040 * K2 },
+        { x: sx, y: sy(1.18), z: sz, rx: 0.030 * K2, rz: 0.040 * K2 }
+      ], 5, { v: 1.4 });
+      /* crossguard: swept along x so it flares out to two points */
+      mb.setColorHex(0xf0cf70);
+      mb.tube([
+        { x: sx - 0.36 * K2, y: sy(1.38), z: sz, ry: 0.028 * K2, rz: 0.028 * K2 },
+        { x: sx - 0.20 * K2, y: sy(1.40), z: sz, ry: 0.062 * K2, rz: 0.055 * K2 },
+        { x: sx, y: sy(1.42), z: sz, ry: 0.080 * K2, rz: 0.072 * K2 },
+        { x: sx + 0.20 * K2, y: sy(1.40), z: sz, ry: 0.062 * K2, rz: 0.055 * K2 },
+        { x: sx + 0.36 * K2, y: sy(1.38), z: sz, ry: 0.028 * K2, rz: 0.028 * K2 }
+      ], 7, { axis: 'x' });
+      var hm = ctx.batch.mb('leather');
+      hm.setColorHex(0xb98a52);
+      hm.tube([
+        { x: sx, y: sy(1.44), z: sz, r: 0.056 * K2 },
+        { x: sx, y: sy(1.58), z: sz, r: 0.064 * K2 },
+        { x: sx, y: sy(1.72), z: sz, r: 0.056 * K2 }
+      ], 7, { v: 3 });
+      var pm = ctx.batch.mb('gold');
+      pm.setColorHex(0xf4d878);
+      pm.ovoid(sx, sy(1.81), sz, 0.090 * K2, 0.080 * K2, 0.090 * K2, 8, 5);
       /* fireflies over the grave at dusk */
       ctx.emitter({
         x: 0, z: 0, interval: 0.22, range: 40,
