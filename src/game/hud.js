@@ -93,23 +93,31 @@ var LZ = LZ || {};
       }
     }
 
-    /* ---- C buttons: round, gold, top right, as on the pad ---- */
-    var cx = W - 58, cy = 16;
+    /* ---- C buttons: round, gold, top right, as on the pad ----
+       Spacing has to clear the discs. At 320x240 an 11px radius on a 17px
+       pitch overlaps its neighbours, and any count printed inside lands on
+       the icon; the counts go in badges hung below the row instead. */
+    var cR = 9, cPitch = 21;
+    var cx = W - 12 - cPitch * 2 - cR, cy = 15;
     var cLabels = ['\u25C0', '\u25BC', '\u25B6'];
-    var cPos = [[cx, cy + 9], [cx + 17, cy + 17], [cx + 34, cy + 9]];
+    var cPos = [[cx, cy], [cx + cPitch, cy + 7], [cx + cPitch * 2, cy]];
     for (var s = 0; s < 3; s++) {
       var bx = cPos[s][0], by = cPos[s][1];
-      ui.disc(bx, by, 11, [0.10, 0.09, 0.06, 0.85]);
-      ui.disc(bx, by, 10, [0.86, 0.72, 0.16, 1]);
-      ui.disc(bx, by, 8.4, [0.20, 0.18, 0.12, 0.9]);
+      ui.disc(bx, by, cR + 1.4, [0.10, 0.09, 0.06, 0.85]);
+      ui.disc(bx, by, cR, [0.86, 0.72, 0.16, 1]);
+      ui.disc(bx, by, cR * 0.84, [0.20, 0.18, 0.12, 0.9]);
       var id = inv.slots[s];
       if (id) {
         var d = Items.ITEMS[id];
-        ui.icon(d.icon, bx - 7, by - 7, 14);
+        ui.icon(d.icon, bx - 6, by - 6, 12);
         if (d.ammo) {
-          ui.textRight(String(inv[d.ammo] || 0), bx + 11, by + 4, [1, 1, 1, 1]);
+          var cnt = String(inv[d.ammo] || 0);
+          var cw = ui.measure(cnt) + 4;
+          var cbx = Math.round(bx - cw / 2);
+          ui.rect(cbx, by + cR + 1, cw, 9, [0.06, 0.05, 0.04, 0.88]);
+          ui.text(cnt, cbx + 2, by + cR + 3, [1, 0.96, 0.72, 1]);
         }
-        if (inv.wornMask === id) ui.discOutline(bx, by, 12, [0.4, 1, 0.6, 1]);
+        if (inv.wornMask === id) ui.discOutline(bx, by, cR + 2, [0.4, 1, 0.6, 1]);
       } else {
         ui.textCentered(cLabels[s], bx, by - 4, [0.62, 0.54, 0.24, 1]);
       }
@@ -163,11 +171,18 @@ var LZ = LZ || {};
     }
 
     /* ---- toasts ---- */
+    /* Low and stacking upward, each on its own plate. Centred in the middle
+       of the screen they sat right over the player and washed out against
+       bright ground; down here they read like the game's own captions. */
     for (var t = 0; t < this.toasts.length; t++) {
       var to = this.toasts[t];
       var a = M.saturate(Math.min(to.t * 4, (to.dur - to.t) * 3));
+      var tw2 = ui.measure(to.text);
+      var ty = H - 30 - (this.toasts.length - 1 - t) * 12;
+      ui.alpha = a * 0.82;
+      ui.rect(Math.round(W / 2 - tw2 / 2) - 5, ty - 2, tw2 + 10, 11, [0.05, 0.05, 0.08, 1]);
       ui.alpha = a;
-      ui.textCentered(to.text, W / 2, 62 + t * 10, [1, 0.98, 0.85, 1]);
+      ui.textCentered(to.text, W / 2, ty, [1, 0.98, 0.85, 1]);
       ui.alpha = 1;
     }
 

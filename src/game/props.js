@@ -173,12 +173,33 @@ var LZ = LZ || {};
     o = o || {};
     var s = o.scale || 1;
     var mb = b.mb('leavesDark');
-    mb.setColorHex(0x6f9a58);
+    mb.setColorHex(0x8fbf6a);
     var h = (1.5 + rnd(x * 3 + z) * 0.9) * s;
-    mb.cylinder(x, y, z, 0.24 * s, 0.20 * s, h, 7, true, 1.4);
-    mb.cylinder(x - 0.42 * s, y + h * 0.42, z, 0.12 * s, 0.11 * s, h * 0.42, 6, true, 1.4);
-    mb.cylinder(x - 0.42 * s, y + h * 0.42, z, 0.13 * s, 0.13 * s, 0.02, 6, true, 1.4);
-    mb.taper(x - 0.21 * s, y + h * 0.40, z, 0.10 * s, 0.10 * s, 0.10 * s, 0.10 * s, 0.10 * s, 0, 0, 1.4);
+    /* a saguaro: rounded top, slight swell at the middle, two raised arms */
+    function trunk(ox, oz, base, len, r) {
+      mb.tube([
+        { x: ox, y: base, z: oz, r: r * 0.92 },
+        { x: ox, y: base + len * 0.18, z: oz, r: r },
+        { x: ox, y: base + len * 0.62, z: oz, r: r * 0.96 },
+        { x: ox, y: base + len * 0.90, z: oz, r: r * 0.82 },
+        { x: ox, y: base + len * 0.99, z: oz, r: r * 0.46 },
+        { x: ox, y: base + len * 1.03, z: oz, r: r * 0.12 }
+      ], 8, { v: 0.8, capStart: false });
+    }
+    function arm(side) {
+      var ax = x + side * 0.40 * s, ay = y + h * 0.44, top = y + h * 0.86;
+      mb.tube([
+        { x: x + side * 0.13 * s, y: ay, z: z, r: 0.13 * s },
+        { x: x + side * 0.34 * s, y: ay + 0.06 * s, z: z, r: 0.12 * s },
+        { x: ax, y: ay + 0.26 * s, z: z, r: 0.12 * s },
+        { x: ax, y: top - 0.16 * s, z: z, r: 0.11 * s },
+        { x: ax, y: top, z: z, r: 0.06 * s },
+        { x: ax, y: top + 0.05 * s, z: z, r: 0.015 * s }
+      ], 7, { v: 0.8 });
+    }
+    trunk(x, z, y, h, 0.24 * s);
+    arm(-1);
+    if (rnd(x + z * 7) > 0.35) arm(1);
     if (b.col) b.col.add(C.cyl(x, y, z, 0.30 * s, h, { surface: 'wood', tag: 'cactus' }));
   };
 
@@ -238,6 +259,9 @@ var LZ = LZ || {};
     if (b.col) b.col.add(C.cyl(x, y, z, 0.42 * s, 1.2 * s, {}));
   };
 
+  /* A rock outcrop or desert butte. Built as a stack of swept rings with
+     per-ring jitter and a flared skirt, not stacked boxes: a box mesa is the
+     single most obvious "unfinished" shape a low-poly world can show. */
   P.cliff = function (b, x, y, z, w, h, d, o) {
     o = o || {};
     var mb = b.mb(o.mat || 'rock');
@@ -246,15 +270,38 @@ var LZ = LZ || {};
     var m = LZ.M4.create();
     LZ.M4.compose(m, x, y, z, 0, yaw, 0, 1, 1, 1);
     mb.setMatrix(m);
-    var layers = o.layers || 3;
-    for (var i = 0; i < layers; i++) {
+    var sides = o.sides || 7;
+    var layers = Math.max(3, o.layers || 4);
+    var taper = o.taper === undefined ? 0.30 : o.taper;
+    var rings = [];
+    /* a skirt of scree where the rock meets the ground */
+    rings.push({ x: 0, y: -0.15, z: 0, rx: w * 0.60, rz: d * 0.60 });
+    for (var i = 0; i <= layers; i++) {
       var t = i / layers;
-      var yy = h * t;
-      var ww = w * (1 - t * (o.taper === undefined ? 0.22 : o.taper));
-      var dd = d * (1 - t * (o.taper === undefined ? 0.22 : o.taper));
-      var nw = w * (1 - (t + 1 / layers) * (o.taper === undefined ? 0.22 : o.taper));
-      var nd = d * (1 - (t + 1 / layers) * (o.taper === undefined ? 0.22 : o.taper));
-      mb.taper((rnd(i + x) - 0.5) * 0.3, yy, (rnd(i + z) - 0.5) * 0.3, ww, dd, nw, nd, h / layers, 0, 0, 0.8);
+      /* ledges: each band steps in, and alternate bands step in harder, so
+         the profile reads as bedding planes rather than a smooth cone */
+      var step = t * taper + (i % 2 ? 0.05 : 0) * taper;
+      var jx = (rnd(i * 3.1 + x) - 0.5) * w * 0.13;
+      var jz = (rnd(i * 5.7 + z) - 0.5) * d * 0.13;
+      var jr = 0.92 + rnd(i * 7.3 + x + z) * 0.18;
+      rings.push({
+        x: jx, y: h * t, z: jz,
+        rx: w * 0.5 * (1 - step) * jr, rz: d * 0.5 * (1 - step) * jr
+      });
+    }
+    /* the cap: a slightly domed top, so it never reads as a cut-off box */
+    var top = rings[rings.length - 1];
+    rings.push({ x: top.x, y: h * 1.03, z: top.z, rx: top.rx * 0.82, rz: top.rz * 0.82 });
+    rings.push({ x: top.x, y: h * 1.08, z: top.z, rx: top.rx * 0.48, rz: top.rz * 0.48 });
+    mb.tube(rings, sides, { v: 0.5, capStart: false });
+    /* a boulder or two shed at the base */
+    if (o.debris !== false) {
+      for (var k = 0; k < 2; k++) {
+        var a = rnd(k * 11 + x) * Math.PI * 2;
+        var rr = (0.30 + rnd(k * 13 + z) * 0.22) * Math.min(w, d);
+        mb.ovoid(Math.sin(a) * (w * 0.5 + rr * 0.5), rr * 0.5, Math.cos(a) * (d * 0.5 + rr * 0.5),
+          rr * 0.7, rr * 0.55, rr * 0.7, 6, 4);
+      }
     }
     mb.setMatrix(null);
     if (o.collide !== false && b.col) {
@@ -312,13 +359,26 @@ var LZ = LZ || {};
     trim.setColorHex(0xc8a850);
     trim.box(doorW * 0.30, doorH * 0.48, hd - 0.10, 0.09, 0.09, 0.05, 2.8);
     trim.setColorHex(o.trimColor === undefined ? 0xffffff : o.trimColor);
-    /* windows */
+    /* Windows. A dark rectangle punched in a wall reads as a hole in the
+       model, not a window: what sells it is the frame, a mullion cross, and
+       an interior that is dim but warm rather than black. */
     if (o.windows !== false) {
       var wy = h * 0.62;
+      var lit = o.windowLit === undefined ? 0xc8a468 : o.windowLit;
       for (var s2 = -1; s2 <= 1; s2 += 2) {
-        trim.box(s2 * (hw * 0.55), wy, hd - 0.06, 0.72, 0.62, 0.10, 2.4);
-        trim.setColorHex(0x2a2418);
-        trim.box(s2 * (hw * 0.55), wy, hd - 0.02, 0.58, 0.48, 0.06, 2.4);
+        var wxc = s2 * (hw * 0.55);
+        trim.box(wxc, wy, hd - 0.06, 0.78, 0.68, 0.10, 2.4);
+        /* the room behind */
+        trim.setColorHex(lit);
+        trim.box(wxc, wy, hd + 0.02, 0.58, 0.48, 0.02, 2.4);
+        /* mullions */
+        trim.setColorHex(o.trimColor === undefined ? 0x6a5236 : o.trimColor);
+        trim.box(wxc, wy, hd - 0.03, 0.05, 0.50, 0.06, 2.4);
+        trim.box(wxc, wy, hd - 0.03, 0.60, 0.05, 0.06, 2.4);
+        /* sill, and a shutter hinged back against the wall */
+        trim.box(wxc, wy - 0.36, hd - 0.10, 0.90, 0.07, 0.18, 2.4);
+        trim.setColorHex(o.shutterColor === undefined ? 0x7a5a34 : o.shutterColor);
+        trim.box(wxc + s2 * 0.52, wy, hd - 0.05, 0.18, 0.62, 0.07, 2.4);
         trim.setColorHex(o.trimColor === undefined ? 0xffffff : o.trimColor);
       }
     }
