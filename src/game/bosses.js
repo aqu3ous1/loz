@@ -98,8 +98,6 @@ var LZ = LZ || {};
     this.hitFlash = 0.34;
     this.game.cam.addShake(0.14);
     /* phase transitions at even fractions of max health */
-    var next = Math.ceil((before - amount) / this.maxHp * this.maxPhase);
-    var wantPhase = this.maxPhase - Math.max(0, next - 1) + 0;
     var frac = (before - amount) / this.maxHp;
     var newPhase = Math.min(this.maxPhase, Math.floor((1 - frac) * this.maxPhase) + 1);
     if (newPhase > this.phase && (before - amount) > 0) {
