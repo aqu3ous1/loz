@@ -63,6 +63,21 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     }, st);
     /* let the camera settle and animations tick */
     for (let i = 0; i < 40; i++) await sleep(25);
+    if (process.env.ACTORPROBE) {
+      const ai = await page.evaluate(() => {
+        const g = window.GAME;
+        return g.world.actors.map(a => (a.name || a.kind) + ' clip=' +
+          (a.anim && a.anim.clip ? a.anim.clip.name : '-') +
+          ' y=' + a.pos[1].toFixed(2) + ' grav=' + a.gravity +
+          ' head=' + (a.anim && a.anim.boneMatrix('head') ? a.anim.boneMatrix('head')[13].toFixed(2) : '-') +
+          (a.anim && a.anim.pose ? ' rootPose=' + Array.prototype.slice.call(a.anim.pose, 0, 6).map(v => v.toFixed(3)).join(',') +
+            ' tracks=' + Object.keys(a.anim.clip.tracks).join('/') +
+            ' b0=' + a.anim.skel.bones[0].name + ' blend=' + a.anim.blend.toFixed(2) +
+            ' bt=' + a.anim.blendTime + ' rtrk=' + JSON.stringify(a.anim.clip.tracks.root || null) : '')
+        ).join('\n');
+      });
+      console.log('ACTORS ' + st.name + '\n' + ai);
+    }
     if (probe) {
       const info = await page.evaluate((pts) => {
         const g = window.GAME, w = g.world;

@@ -31,10 +31,31 @@ var LZ = LZ || {};
 
       /* the bed, against the far wall */
       P.bed(ctx.batch, -1.8, 0, -2.4, { yaw: Math.PI / 2, sheet: 'clothWhite' });
+      /* a blanket drawn up over his legs, so the bed reads as occupied */
+      var bl = ctx.batch.mb('clothBrown');
+      bl.setColorHex(0xa8886a);
+      /* the bed is yawed a quarter turn, so its length runs along world x
+         from about -2.87 to -0.73; the blanket covers the foot half only */
+      bl.tube([
+        { x: -1.90, y: 0.52, z: -2.40, ry: 0.13, rz: 0.50 },
+        { x: -1.55, y: 0.57, z: -2.40, ry: 0.18, rz: 0.52 },
+        { x: -1.05, y: 0.57, z: -2.42, ry: 0.18, rz: 0.52 },
+        { x: -0.80, y: 0.50, z: -2.42, ry: 0.12, rz: 0.48 }
+      ], 8, { axis: 'x' });
       P.table(ctx.batch, 2.2, 0, -1.6, { w: 1.2, d: 0.8 });
       P.chair(ctx.batch, 2.2, 0, -0.5, { yaw: 0 });
       P.barrel(ctx.batch, 3.6, 0, 2.4, { scale: 0.9 });
       P.crate(ctx.batch, -3.6, 0, 2.6, { scale: 0.8 });
+      /* a shuttered window on the west wall, with evening light coming in */
+      var wm2 = ctx.batch.mb('planksDark');
+      wm2.setColorHex(0x6a5236);
+      wm2.box(-4.94, 1.85, 0.6, 0.10, 1.05, 1.35, 2);
+      wm2.setColorHex(0xd8b878);
+      wm2.box(-4.86, 1.85, 0.6, 0.04, 0.86, 1.14, 2);
+      wm2.setColorHex(0x6a5236);
+      wm2.box(-4.84, 1.85, 0.6, 0.06, 0.90, 0.07, 2);
+      wm2.box(-4.84, 1.85, 0.6, 0.06, 0.07, 1.18, 2);
+      K.torch(ctx, -4.4, -2.4, { y: 1.5, h: 0.4, lit: true });
 
       /* hearth */
       var mb = ctx.batch.mb('brick');
@@ -45,7 +66,9 @@ var LZ = LZ || {};
 
       /* old Link in the bed */
       var link = K.npc(ctx, {
-        x: -1.8, z: -2.4, yaw: Math.PI / 2, name: 'Link',
+        /* on the mattress, not in it: the lie clip drops the body to about
+           0.1 above its own origin, and the bed's sheet sits at 0.51 */
+        x: -1.8, z: -2.4, y: 0.44, yaw: Math.PI / 2, name: 'Link',
         build: 'old', scale: 1.0, palette: 4,
         cloth: 0x4a7a52, clothDark: 0x2f5a3a, skin: 0xd8bfa4,
         hair: 0xe4e0d4, hairStyle: 'long', hat: 'none', beard: true, beardColor: 0xe4e0d4,

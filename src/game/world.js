@@ -354,6 +354,11 @@ var LZ = LZ || {};
       a.culled = d2 > (a.cullDist === undefined ? 70 : a.cullDist) * (a.cullDist === undefined ? 70 : a.cullDist);
       if (a.culled && !a.alwaysUpdate) continue;
       if (a.update) a.update(dt, game);
+      /* Advance the animator once per frame, after the actor has chosen its
+         clip for this frame. Nothing else in the engine ticks it, so without
+         this every rig sits in its bind pose and only actor position and yaw
+         ever change. */
+      if (a.anim && !a.animPaused) a.anim.update(dt);
     }
 
     /* triggers */
