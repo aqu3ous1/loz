@@ -643,41 +643,53 @@ var LZ = LZ || {};
   MeshBuilder.prototype.tube = function (rings, sides, opts) {
     opts = opts || {};
     sides = sides || 8;
+    var axis = opts.axis || 'y';
     var uScale = opts.u === undefined ? 1 : opts.u;
     var vScale = opts.v === undefined ? 1 : opts.v;
     var grid = [];
     var i, k;
     var vrun = 0;
+    /* the two axes the ring sweeps around, and the axis it advances along */
+    var A1 = axis === 'y' ? 0 : (axis === 'x' ? 1 : 0);   /* index into [x,y,z] */
+    var A2 = axis === 'y' ? 2 : (axis === 'x' ? 2 : 1);
+    var AX = axis === 'y' ? 1 : (axis === 'x' ? 0 : 2);
+    var R1 = axis === 'y' ? 'rx' : (axis === 'x' ? 'ry' : 'rx');
+    var R2 = axis === 'y' ? 'rz' : (axis === 'x' ? 'rz' : 'ry');
     for (i = 0; i < rings.length; i++) {
       var rg = rings[i];
-      var rx = rg.rx === undefined ? rg.r : rg.rx;
-      var rz = rg.rz === undefined ? rg.r : rg.rz;
+      var r1 = rg[R1] === undefined ? rg.r : rg[R1];
+      var r2 = rg[R2] === undefined ? rg.r : rg[R2];
+      var c = [rg.x || 0, rg.y || 0, rg.z || 0];
       if (i > 0) {
         var pv = rings[i - 1];
-        var dx = rg.x - pv.x, dy = rg.y - pv.y, dz = rg.z - pv.z;
+        var dx = (rg.x || 0) - (pv.x || 0), dy = (rg.y || 0) - (pv.y || 0), dz = (rg.z || 0) - (pv.z || 0);
         vrun += Math.sqrt(dx * dx + dy * dy + dz * dz);
       }
-      /* slope of the surface, so the normals are not all horizontal */
+      /* surface slope along the sweep axis, so the caps shade correctly */
       var slope = 0;
-      if (i < rings.length - 1) {
-        var nx2 = rings[i + 1];
-        var drn = ((nx2.rx === undefined ? nx2.r : nx2.rx) - rx);
-        var dyn = (nx2.y - rg.y) || 0.0001;
-        slope = -drn / dyn;
-      } else if (i > 0) {
-        var pv2 = rings[i - 1];
-        var drp = rx - (pv2.rx === undefined ? pv2.r : pv2.rx);
-        var dyp = (rg.y - pv2.y) || 0.0001;
-        slope = -drp / dyp;
+      var nb = (i < rings.length - 1) ? rings[i + 1] : null;
+      var pb = (i > 0) ? rings[i - 1] : null;
+      if (nb) {
+        var dr = ((nb[R1] === undefined ? nb.r : nb[R1]) - r1);
+        var da = ((nb.x || 0) * (AX === 0 ? 1 : 0) + (nb.y || 0) * (AX === 1 ? 1 : 0) + (nb.z || 0) * (AX === 2 ? 1 : 0))
+               - (c[AX]);
+        slope = -dr / (da || 0.0001);
+      } else if (pb) {
+        var dr2 = r1 - (pb[R1] === undefined ? pb.r : pb[R1]);
+        var da2 = c[AX] - ((pb.x || 0) * (AX === 0 ? 1 : 0) + (pb.y || 0) * (AX === 1 ? 1 : 0) + (pb.z || 0) * (AX === 2 ? 1 : 0));
+        slope = -dr2 / (da2 || 0.0001);
       }
       var row = [];
       for (k = 0; k <= sides; k++) {
         var a = k / sides * M.TAU;
         var sa = Math.sin(a), ca = Math.cos(a);
-        var n = [sa, slope, ca];
+        var p = [c[0], c[1], c[2]];
+        p[A1] += sa * r1;
+        p[A2] += ca * r2;
+        var n = [0, 0, 0];
+        n[A1] = sa; n[A2] = ca; n[AX] = slope;
         var nl = Math.sqrt(n[0] * n[0] + n[1] * n[1] + n[2] * n[2]) || 1;
-        row.push(this.vert(rg.x + sa * rx, rg.y, rg.z + ca * rz,
-          n[0] / nl, n[1] / nl, n[2] / nl,
+        row.push(this.vert(p[0], p[1], p[2], n[0] / nl, n[1] / nl, n[2] / nl,
           k / sides * uScale, vrun * vScale));
       }
       grid.push(row);
@@ -688,19 +700,20 @@ var LZ = LZ || {};
         this.i.push(grid[i][k], grid[i + 1][k + 1], grid[i + 1][k]);
       }
     }
+    var capN = [0, 0, 0]; capN[AX] = 1;
     if (opts.capStart !== false) {
       var r0 = rings[0];
-      var rr0 = r0.rx === undefined ? r0.r : r0.rx;
+      var rr0 = r0[R1] === undefined ? r0.r : r0[R1];
       if (rr0 > 0.001) {
-        var c0 = this.vert(r0.x, r0.y, r0.z, 0, -1, 0, 0.5, 0.5);
+        var c0 = this.vert(r0.x || 0, r0.y || 0, r0.z || 0, -capN[0], -capN[1], -capN[2], 0.5, 0.5);
         for (k = 0; k < sides; k++) this.i.push(c0, grid[0][k + 1], grid[0][k]);
       }
     }
     if (opts.capEnd !== false) {
       var rn = rings[rings.length - 1];
-      var rrn = rn.rx === undefined ? rn.r : rn.rx;
+      var rrn = rn[R1] === undefined ? rn.r : rn[R1];
       if (rrn > 0.001) {
-        var cn = this.vert(rn.x, rn.y, rn.z, 0, 1, 0, 0.5, 0.5);
+        var cn = this.vert(rn.x || 0, rn.y || 0, rn.z || 0, capN[0], capN[1], capN[2], 0.5, 0.5);
         var last = grid[grid.length - 1];
         for (k = 0; k < sides; k++) this.i.push(cn, last[k], last[k + 1]);
       }

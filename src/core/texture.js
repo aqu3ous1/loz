@@ -104,13 +104,17 @@ var LZ = LZ || {};
     base = base || [72, 118, 54]; alt = alt || [104, 152, 70];
     var t = new Tile(64, 64);
     t.each(function (x, y) {
-      var n = wfbm(x, y, 64, 64, 8, 3, seed || 1);
+      var n = wfbm(x, y, 64, 64, 5, 4, seed || 1);
+      var patch = wfbm(x, y, 64, 64, 2, 2, (seed || 1) + 77);
       var n2 = wnoise(x, y, 64, 64, 32, (seed || 1) + 41);
-      var c = mixc(base, alt, M.saturate(n * 1.3 - 0.1));
-      c = shade(c, 0.86 + n2 * 0.28);
-      /* sparse blade flecks */
-      if (n2 > 0.93) c = mixc(c, [150, 186, 96, 255], 0.6);
-      if (n2 < 0.05) c = shade(c, 0.78);
+      var c = mixc(base, alt, M.saturate(n * 1.25 - 0.05));
+      /* broad patches keep a big field from reading as one flat colour */
+      c = shade(c, 0.80 + patch * 0.42);
+      c = shade(c, 0.90 + n2 * 0.22);
+      /* blade flecks and bare spots */
+      if (n2 > 0.94) c = mixc(c, [162, 196, 104, 255], 0.55);
+      if (n2 < 0.04) c = shade(c, 0.72);
+      if (patch < 0.18) c = mixc(c, [118, 104, 72, 255], 0.34);
       t.set(x, y, c[0], c[1], c[2], 255);
     });
     return t.posterize();
@@ -143,14 +147,17 @@ var LZ = LZ || {};
   T.rock = function (tintHex, seed) {
     var base = tintHex ? hex(tintHex) : [112, 108, 104];
     var t = new Tile(64, 64);
+    var f = [0, 0];
     t.each(function (x, y) {
-      var cell = 1 - M.saturate(M.worley2(x / 64 * 5 + 0.3, y / 64 * 5 + 0.7, seed || 13) * 1.4);
-      var n = wfbm(x, y, 64, 64, 8, 3, (seed || 13) + 17);
-      var f = 0.66 + n * 0.5 + cell * 0.28;
-      var c = shade(base, f);
-      /* crack lines */
-      var cr = M.worley2(x / 64 * 5 + 0.3, y / 64 * 5 + 0.7, seed || 13);
-      if (cr > 0.62) c = shade(c, 0.6);
+      var gx = x / 64 * 4.5 + 0.3, gy = y / 64 * 4.5 + 0.7;
+      M.worley2b(gx, gy, seed || 13, f);
+      var joint = f[1] - f[0];
+      var id = M.worleyCell(gx, gy, seed || 13);
+      var n = wfbm(x, y, 64, 64, 10, 3, (seed || 13) + 17);
+      var face = mixc(base, shade(base, 1.22), id);
+      var c = shade(face, 0.80 + n * 0.34);
+      if (joint < 0.07) c = shade(c, 0.62);          /* crack */
+      else if (joint < 0.14) c = shade(c, 0.84);
       t.set(x, y, c[0], c[1], c[2], 255);
     });
     return t.posterize();
@@ -194,11 +201,26 @@ var LZ = LZ || {};
   };
   T.cobble = function (seed) {
     var t = new Tile(64, 64);
+    var f = [0, 0];
     t.each(function (x, y) {
-      var d = M.worley2(x / 64 * 6, y / 64 * 6, seed || 51);
-      var n = wfbm(x, y, 64, 64, 16, 2, (seed || 51) + 5);
-      var base = mixc([128, 124, 116], [162, 158, 148], n);
-      var c = d > 0.44 ? shade(base, 0.5) : shade(base, 0.86 + (0.44 - d) * 0.9);
+      var cells = 7;
+      var gx = x / 64 * cells, gy = y / 64 * cells;
+      M.worley2b(gx, gy, seed || 51, f);
+      var joint = f[1] - f[0];
+      var id = M.worleyCell(gx, gy, seed || 51);
+      var n = wfbm(x, y, 64, 64, 24, 2, (seed || 51) + 5);
+      var base = mixc([104, 100, 96], [142, 136, 126], id);
+      var c;
+      if (joint < 0.10) {
+        /* mortar: a narrow darker seam, not half the surface */
+        c = shade([74, 70, 66], 0.88 + n * 0.24);
+      } else {
+        /* each stone domes slightly toward its centre */
+        var dome = M.saturate((joint - 0.10) / 0.45);
+        c = shade(base, 0.86 + dome * 0.22 + n * 0.16);
+        if (id > 0.88) c = mixc(c, [96, 92, 100, 255], 0.30);
+        if (id < 0.12) c = mixc(c, [120, 108, 92, 255], 0.30);
+      }
       t.set(x, y, c[0], c[1], c[2], 255);
     });
     return t.posterize();
@@ -583,6 +605,65 @@ var LZ = LZ || {};
         if (x >= 52 && y < 12) continue;
         t.set(x, y, col[0], col[1], col[2], 255);
       }
+    }
+
+    /* ---- special faces ---- */
+    if (style === 'skull') {
+      /* bone base with deep sockets and a tooth row: reads instantly */
+      t.each(function (x, y) {
+        if (x >= 52 && y < 12) return;
+        var n = wfbm(x, y, 64, 64, 7, 2, seed + 11);
+        var c = shade([228, 220, 198], 0.86 + n * 0.26);
+        t.set(x, y, c[0], c[1], c[2], 255);
+      });
+      var sock = [14, 14, 30];
+      for (var sy = 0; sy < 64; sy++) {
+        for (var sx = 0; sx < 64; sx++) {
+          if (sx >= 52 && sy < 12) continue;
+          var c2 = null;
+          for (var sd = -1; sd <= 1; sd += 2) {
+            var ex = 32 + sd * 13, ey = 25;
+            var dx = (sx - ex) / 9.5, dy = (sy - ey) / 8.5;
+            if (dx * dx + dy * dy < 1) c2 = sock;
+          }
+          /* nasal cavity */
+          var nx = (sx - 32) / 4.0, ny = (sy - 40) / 6.0;
+          if (nx * nx + ny * ny < 1) c2 = sock;
+          /* jaw line and teeth */
+          if (sy >= 48 && sy <= 56 && sx > 16 && sx < 48) {
+            c2 = ((sx - 17) % 5 < 1 || sy === 48) ? sock : [238, 232, 214];
+          }
+          if (c2) t.set(sx, sy, c2[0], c2[1], c2[2], 255);
+        }
+      }
+      if (o.emberEyes !== false) {
+        var glow = hex(o.eye === undefined ? 0xff6020 : o.eye);
+        for (var g2 = -1; g2 <= 1; g2 += 2) {
+          ellipse(32 + g2 * 13, 26, 4.2, 4.2, glow);
+          ellipse(32 + g2 * 13, 26, 2.0, 2.0, [255, 240, 200, 255]);
+        }
+      }
+      return t.posterize();
+    }
+    if (style === 'wrapped') {
+      /* mummy bandages with a single dark gap for the eyes */
+      t.each(function (x, y) {
+        if (x >= 52 && y < 12) return;
+        var band = Math.floor((y + Math.sin(x * 0.18) * 2.4) / 5);
+        var h2 = M.hash2(band, 0, seed + 21);
+        var c = shade([214, 205, 178], 0.78 + h2 * 0.30 + ((y % 5) === 0 ? -0.16 : 0));
+        t.set(x, y, c[0], c[1], c[2], 255);
+      });
+      for (var wy = 22; wy < 32; wy++) {
+        for (var wx = 12; wx < 52; wx++) {
+          if (wx >= 52 && wy < 12) continue;
+          t.set(wx, wy, 16, 14, 18, 255);
+        }
+      }
+      for (var g3 = -1; g3 <= 1; g3 += 2) {
+        ellipse(32 + g3 * 11, 27, 3.0, 2.6, [200, 60, 40, 255]);
+      }
+      return t.posterize();
     }
 
     var eyeY = o.eyeY === undefined ? 26 : o.eyeY;

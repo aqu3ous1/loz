@@ -416,7 +416,7 @@ var LZ = LZ || {};
       o = o || {};
       return {
         sky: o.sky || 'skyDay',
-        fog: o.fog || { color: [0.62, 0.72, 0.86], near: 34, far: 118, density: 1 },
+        fog: o.fog || { color: [0.68, 0.77, 0.88], near: 22, far: 76, density: 1 },
         light: o.light || {
           ambient: [0.46, 0.48, 0.54], dir0: [0.42, 0.80, 0.42], col0: [0.66, 0.62, 0.52],
           dir1: [-0.4, 0.35, -0.6], col1: [0.16, 0.20, 0.28]
@@ -428,7 +428,7 @@ var LZ = LZ || {};
       o = o || {};
       return {
         sky: 'skyDusk',
-        fog: { color: [0.52, 0.40, 0.42], near: 24, far: 96, density: 1 },
+        fog: { color: [0.56, 0.43, 0.44], near: 16, far: 62, density: 1 },
         light: {
           ambient: [0.36, 0.32, 0.40], dir0: [0.6, 0.42, -0.5], col0: [0.78, 0.50, 0.34],
           dir1: [-0.3, 0.5, 0.4], col1: [0.16, 0.18, 0.34]
@@ -440,7 +440,7 @@ var LZ = LZ || {};
       o = o || {};
       return {
         sky: 'skyNight',
-        fog: { color: [0.10, 0.12, 0.22], near: 14, far: 62, density: 1 },
+        fog: { color: [0.12, 0.14, 0.24], near: 10, far: 46, density: 1 },
         light: {
           ambient: [0.22, 0.24, 0.36], dir0: [0.2, 0.7, -0.3], col0: [0.26, 0.30, 0.48],
           dir1: [-0.4, 0.3, 0.5], col1: [0.10, 0.12, 0.22]
@@ -452,7 +452,7 @@ var LZ = LZ || {};
       o = o || {};
       return {
         sky: 'skyDesert',
-        fog: { color: [0.86, 0.78, 0.60], near: 30, far: 110, density: 1 },
+        fog: { color: [0.88, 0.80, 0.62], near: 20, far: 78, density: 1 },
         light: {
           ambient: [0.56, 0.52, 0.44], dir0: [0.3, 0.88, 0.2], col0: [0.82, 0.74, 0.56],
           dir1: [-0.4, 0.3, -0.5], col1: [0.20, 0.18, 0.16]
@@ -464,7 +464,7 @@ var LZ = LZ || {};
       o = o || {};
       return {
         sky: 'skyAsh',
-        fog: { color: [0.42, 0.40, 0.42], near: 16, far: 74, density: 1 },
+        fog: { color: [0.46, 0.44, 0.46], near: 12, far: 56, density: 1 },
         light: {
           ambient: [0.34, 0.33, 0.36], dir0: [0.3, 0.7, 0.3], col0: [0.48, 0.44, 0.42],
           dir1: [-0.3, 0.4, -0.5], col1: [0.18, 0.16, 0.20]
@@ -500,7 +500,7 @@ var LZ = LZ || {};
       o = o || {};
       return {
         sky: 'skyStorm',
-        fog: { color: [0.24, 0.18, 0.26], near: 14, far: 70, density: 1 },
+        fog: { color: [0.26, 0.20, 0.28], near: 10, far: 52, density: 1 },
         light: {
           ambient: [0.26, 0.22, 0.32], dir0: [0.3, 0.7, -0.4], col0: [0.38, 0.30, 0.44],
           dir1: [-0.4, 0.4, 0.5], col1: [0.16, 0.10, 0.22]

@@ -304,6 +304,14 @@ var LZ = LZ || {};
     trim.box(-doorW / 2 - 0.07, doorH / 2, hd - 0.02, 0.14, doorH, 0.22, 2.4);
     trim.box(doorW / 2 + 0.07, doorH / 2, hd - 0.02, 0.14, doorH, 0.22, 2.4);
     trim.box(0, doorH + 0.07, hd - 0.02, doorW + 0.28, 0.14, 0.22, 2.4);
+    /* a recessed door panel so the opening is not a black hole */
+    trim.setColorHex(o.doorColor === undefined ? 0x6a4526 : o.doorColor);
+    trim.box(0, doorH / 2, hd - 0.16, doorW - 0.06, doorH - 0.06, 0.09, 2.8);
+    trim.setColorHex(0x3a2a18);
+    trim.box(0, doorH / 2, hd - 0.11, doorW - 0.28, doorH - 0.30, 0.02, 2.8);
+    trim.setColorHex(0xc8a850);
+    trim.box(doorW * 0.30, doorH * 0.48, hd - 0.10, 0.09, 0.09, 0.05, 2.8);
+    trim.setColorHex(o.trimColor === undefined ? 0xffffff : o.trimColor);
     /* windows */
     if (o.windows !== false) {
       var wy = h * 0.62;
@@ -844,7 +852,7 @@ var LZ = LZ || {};
     var mb = new GL.MeshBuilder();
     var r = radius || 260;
     var segs = 20;
-    var top = 46, bottom = -90;
+    var top = 12, bottom = -46;
     for (var i = 0; i < segs; i++) {
       var a0 = i / segs * M.TAU, a1 = (i + 1) / segs * M.TAU;
       var x0 = Math.sin(a0) * r, z0 = Math.cos(a0) * r;

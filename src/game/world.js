@@ -134,6 +134,24 @@ var LZ = LZ || {};
     function mb(name) { return builders[name] || (builders[name] = new GL.MeshBuilder()); }
 
     var tintFn = area.groundTint || null;
+    /* Per-material average tones, used to feather the seam where two
+       ground textures meet. Without this the material boundary is a hard
+       staircase along the quad grid. */
+    var MAT_TONE = {
+      grass: [0.52, 0.72, 0.42], grassLush: [0.44, 0.66, 0.38], grassDry: [0.74, 0.72, 0.44],
+      grassDark: [0.34, 0.48, 0.34], grassAsh: [0.52, 0.52, 0.46],
+      dirt: [0.62, 0.50, 0.36], dirtRed: [0.64, 0.44, 0.32],
+      sand: [0.86, 0.76, 0.54], sandDark: [0.76, 0.66, 0.46],
+      rock: [0.50, 0.48, 0.46], rockRed: [0.56, 0.40, 0.32], rockDark: [0.34, 0.33, 0.38],
+      rockAsh: [0.42, 0.40, 0.38], snow: [0.88, 0.90, 0.96],
+      cobble: [0.50, 0.48, 0.45], cobbleDark: [0.36, 0.35, 0.34],
+      tileFloor: [0.42, 0.44, 0.52], stoneblockDark: [0.36, 0.36, 0.42],
+      carpet: [0.52, 0.24, 0.26], lava: [0.85, 0.42, 0.18], planks: [0.58, 0.44, 0.28]
+    };
+    function tone(idx) {
+      var t = MAT_TONE[mats[idx] || mats[0]];
+      return t || [0.6, 0.6, 0.6];
+    }
     var cellsX = f.nx - 1, cellsZ = f.nz - 1;
     var nrm = V3.create(0, 1, 0);
 
@@ -169,18 +187,42 @@ var LZ = LZ || {};
 
         var h00 = f.h[j * f.nx + i], h10 = f.h[j * f.nx + i + 1];
         var h01 = f.h[(j + 1) * f.nx + i], h11 = f.h[(j + 1) * f.nx + i + 1];
-        var us = f.cell / 4;
+        var us = f.cell / 2.2;
 
         var c00 = vcol(x0, z0, h00, t00), c10 = vcol(x1, z0, h10, t10);
         var c01 = vcol(x0, z1, h01, t01), c11 = vcol(x1, z1, h11, t11);
+        /* corners whose own material differs from the quad's get pulled
+           toward their material's tone, which feathers the boundary */
+        var quadTone = tone(best);
+        function blendCorner(c, ct) {
+          if (ct === best) return;
+          var ot = tone(ct);
+          var k = 0.55;
+          for (var q = 0; q < 3; q++) c[q] *= (1 - k) + k * (ot[q] / (quadTone[q] || 1));
+        }
+        blendCorner(c00, t00); blendCorner(c10, t10);
+        blendCorner(c01, t01); blendCorner(c11, t11);
 
         var n = V3.create(0, 1, 0);
         f.normal((x0 + x1) / 2, (z0 + z1) / 2, n);
-        var uu0 = (i * us) % 8, vv0 = (j * us) % 8;
-        var a = b.vert(x0, h00, z0, n[0], n[1], n[2], uu0, vv0, c00);
-        var bb = b.vert(x1, h10, z0, n[0], n[1], n[2], uu0 + us, vv0, c10);
-        var cc = b.vert(x1, h11, z1, n[0], n[1], n[2], uu0 + us, vv0 + us, c11);
-        var dd = b.vert(x0, h01, z1, n[0], n[1], n[2], uu0, vv0 + us, c01);
+        var a, bb, cc, dd;
+        if (Math.abs(n[1]) < 0.62) {
+          /* Steep ground: project the texture on a vertical plane instead of
+             from above, or cliffs smear into vertical streaks. */
+          var alongX = Math.abs(n[0]) < Math.abs(n[2]);
+          var s0 = alongX ? x0 : z0, s1 = alongX ? x1 : z1;
+          var uA = s0 * us, uB = s1 * us;
+          a = b.vert(x0, h00, z0, n[0], n[1], n[2], uA, -h00 * us, c00);
+          bb = b.vert(x1, h10, z0, n[0], n[1], n[2], alongX ? uB : uA, -h10 * us, c10);
+          cc = b.vert(x1, h11, z1, n[0], n[1], n[2], uB, -h11 * us, c11);
+          dd = b.vert(x0, h01, z1, n[0], n[1], n[2], alongX ? uA : uB, -h01 * us, c01);
+        } else {
+          var uu0 = (i * us) % 8, vv0 = (j * us) % 8;
+          a = b.vert(x0, h00, z0, n[0], n[1], n[2], uu0, vv0, c00);
+          bb = b.vert(x1, h10, z0, n[0], n[1], n[2], uu0 + us, vv0, c10);
+          cc = b.vert(x1, h11, z1, n[0], n[1], n[2], uu0 + us, vv0 + us, c11);
+          dd = b.vert(x0, h01, z1, n[0], n[1], n[2], uu0, vv0 + us, c01);
+        }
         /* triangulation must match Heightfield.height() */
         b.i.push(a, dd, cc);
         b.i.push(a, cc, bb);

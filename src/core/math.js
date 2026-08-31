@@ -369,6 +369,40 @@ var LZ = LZ || {};
     return Math.sqrt(best);
   };
 
+  /* worley returning the two nearest feature distances; F2-F1 is small
+     exactly on the boundary between cells, which is where mortar goes */
+  M.worley2b = function (x, y, seed, out) {
+    var xi = Math.floor(x), yi = Math.floor(y);
+    var f1 = 8, f2 = 8;
+    for (var dy = -1; dy <= 1; dy++) {
+      for (var dx = -1; dx <= 1; dx++) {
+        var cx = xi + dx, cy = yi + dy;
+        var px = cx + hash2(cx, cy, (seed || 0) + 1);
+        var py = cy + hash2(cx, cy, (seed || 0) + 2);
+        var d = Math.sqrt((px - x) * (px - x) + (py - y) * (py - y));
+        if (d < f1) { f2 = f1; f1 = d; } else if (d < f2) { f2 = d; }
+      }
+    }
+    out = out || [0, 0];
+    out[0] = f1; out[1] = f2;
+    return out;
+  };
+  /* which cell a point belongs to, for per-stone colour */
+  M.worleyCell = function (x, y, seed) {
+    var xi = Math.floor(x), yi = Math.floor(y);
+    var best = 8, bx = xi, by = yi;
+    for (var dy = -1; dy <= 1; dy++) {
+      for (var dx = -1; dx <= 1; dx++) {
+        var cx = xi + dx, cy = yi + dy;
+        var px = cx + hash2(cx, cy, (seed || 0) + 1);
+        var py = cy + hash2(cx, cy, (seed || 0) + 2);
+        var d = (px - x) * (px - x) + (py - y) * (py - y);
+        if (d < best) { best = d; bx = cx; by = cy; }
+      }
+    }
+    return hash2(bx, by, (seed || 0) + 9);
+  };
+
   /* ---------------- geometry helpers ---------------- */
   M.pointInPolyXZ = function (px, pz, poly) {
     var inside = false;

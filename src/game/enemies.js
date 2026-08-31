@@ -282,8 +282,20 @@ var LZ = LZ || {};
   Enemy.prototype.brain = function (dt, g) { this.meleeBrain(dt, g); };
 
   /* ---------------------------------------------------------------- */
-  /* rigs                                                              */
+  /* rigs -- all round forms, no boxes                                 */
   /* ---------------------------------------------------------------- */
+  /* a pair of dark eyes pressed onto a surface, the era's whole face kit */
+  function eyes(mb, cx, cy, cz, sep, r, dark, white) {
+    for (var side = -1; side <= 1; side += 2) {
+      if (white !== false) {
+        mb.setColorHex(0xf4f2e8);
+        mb.ovoid(cx + side * sep, cy, cz, r * 1.35, r * 1.55, r * 0.75, 7, 5);
+      }
+      mb.setColorHex(dark === undefined ? 0x1a1620 : dark);
+      mb.ovoid(cx + side * sep, cy, cz + r * 0.35, r * 0.72, r * 0.95, r * 0.55, 6, 4);
+    }
+  }
+
   function blobRig(color, tex, scale) {
     var s = scale || 1;
     return {
@@ -292,10 +304,16 @@ var LZ = LZ || {};
         { name: 'root' },
         { name: 'body', parent: 'root', offset: [0, 0, 0], mat: tex || 'jellyBlue', build: function (mb) {
             mb.setColorHex(color === undefined ? 0xffffff : color);
-            mb.sphere(0, 0.38 * s, 0, 0.42 * s, 8, 5, 0.92);
-            mb.setColorHex(0x1a1a24);
-            mb.box(-0.15 * s, 0.46 * s, 0.36 * s, 0.09 * s, 0.11 * s, 0.05 * s, 2);
-            mb.box(0.15 * s, 0.46 * s, 0.36 * s, 0.09 * s, 0.11 * s, 0.05 * s, 2);
+            /* a gel drop: wide at the base, domed on top */
+            mb.tube([
+              { x: 0, y: 0.01 * s, z: 0, r: 0.40 * s },
+              { x: 0, y: 0.14 * s, z: 0, r: 0.44 * s },
+              { x: 0, y: 0.34 * s, z: 0, r: 0.42 * s },
+              { x: 0, y: 0.52 * s, z: 0, r: 0.32 * s },
+              { x: 0, y: 0.66 * s, z: 0, r: 0.16 * s },
+              { x: 0, y: 0.72 * s, z: 0, r: 0.02 * s }
+            ], 10, { u: 1, v: 2 });
+            eyes(mb, 0, 0.44 * s, 0.30 * s, 0.15 * s, 0.075 * s);
           } }
       ]
     };
@@ -308,26 +326,47 @@ var LZ = LZ || {};
         { name: 'root' },
         { name: 'body', parent: 'root', offset: [0, 0.4, 0], mat: 'furPurple', build: function (mb) {
             mb.setColorHex(color === undefined ? 0xffffff : color);
-            mb.sphere(0, 0, 0, 0.22, 7, 4, 1.0);
-            mb.setColorHex(0xf0d060);
-            mb.box(-0.08, 0.05, 0.18, 0.06, 0.07, 0.04, 2);
-            mb.box(0.08, 0.05, 0.18, 0.06, 0.07, 0.04, 2);
-            mb.setColorHex(0xd8d4cc);
-            mb.taper(-0.10, 0.16, -0.02, 0.06, 0.06, 0.02, 0.02, 0.16, -0.04, -0.04, 2);
-            mb.taper(0.10, 0.16, -0.02, 0.06, 0.06, 0.02, 0.02, 0.16, 0.04, -0.04, 2);
+            mb.ovoid(0, 0, 0, 0.20, 0.19, 0.22, 9, 6);
+            /* ears */
+            for (var sd = -1; sd <= 1; sd += 2) {
+              mb.tube([
+                { x: sd * 0.09, y: 0.15, z: -0.02, r: 0.045 },
+                { x: sd * 0.13, y: 0.30, z: -0.06, r: 0.006 }
+              ], 5, { u: 1, v: 2, capStart: false });
+            }
+            /* snout */
+            mb.tube([
+              { x: 0, y: -0.02, z: 0.16, r: 0.085 },
+              { x: 0, y: -0.05, z: 0.25, r: 0.045 }
+            ], 6, { u: 1, v: 2, capStart: false });
+            eyes(mb, 0, 0.045, 0.175, 0.075, 0.045, 0xf0d060, false);
           } },
-        { name: 'wingL', parent: 'body', offset: [-0.18, 0.02, 0], mat: 'furPurple', build: function (mb) {
+        { name: 'wingL', parent: 'body', offset: [-0.16, 0.02, 0], mat: 'furPurple', build: function (mb) {
             mb.setColorHex(0x8a7aa0);
-            mb.quad([0, 0, 0.14], [-0.52, 0.06, 0.06], [-0.5, -0.04, -0.16], [0, 0, -0.14], 1);
-            mb.quad([0, 0, -0.14], [-0.5, -0.04, -0.16], [-0.52, 0.06, 0.06], [0, 0, 0.14], 1);
+            wing(mb, -1);
           } },
-        { name: 'wingR', parent: 'body', offset: [0.18, 0.02, 0], mat: 'furPurple', build: function (mb) {
+        { name: 'wingR', parent: 'body', offset: [0.16, 0.02, 0], mat: 'furPurple', build: function (mb) {
             mb.setColorHex(0x8a7aa0);
-            mb.quad([0, 0, -0.14], [0.5, -0.04, -0.16], [0.52, 0.06, 0.06], [0, 0, 0.14], 1);
-            mb.quad([0, 0, 0.14], [0.52, 0.06, 0.06], [0.5, -0.04, -0.16], [0, 0, -0.14], 1);
+            wing(mb, 1);
           } }
       ]
     };
+    function wing(mb, sd) {
+      /* three membrane panels between finger bones */
+      var pts = [[0, 0, 0.12], [sd * 0.22, 0.06, 0.02], [sd * 0.42, 0.04, -0.06], [sd * 0.52, -0.02, -0.16]];
+      for (var i = 0; i < pts.length - 1; i++) {
+        var a = pts[i], b = pts[i + 1];
+        mb.quad([a[0], a[1], a[2]], [b[0], b[1], b[2]],
+          [b[0] * 0.85, b[1] - 0.14, b[2] - 0.10], [a[0] * 0.85, a[1] - 0.12, a[2] - 0.08], 1);
+        mb.quad([a[0] * 0.85, a[1] - 0.12, a[2] - 0.08], [b[0] * 0.85, b[1] - 0.14, b[2] - 0.10],
+          [b[0], b[1], b[2]], [a[0], a[1], a[2]], 1);
+      }
+      mb.setColorHex(0x5c4a70);
+      for (var k = 1; k < pts.length; k++) {
+        mb.tube([{ x: 0, y: 0, z: 0.05, r: 0.016 },
+                 { x: pts[k][0], y: pts[k][1], z: pts[k][2], r: 0.010 }], 4, { u: 1, v: 2 });
+      }
+    }
   }
 
   function spiderRig(color) {
@@ -337,20 +376,34 @@ var LZ = LZ || {};
         { name: 'root' },
         { name: 'body', parent: 'root', offset: [0, 0.45, 0], mat: 'scaleGreen', build: function (mb) {
             mb.setColorHex(color === undefined ? 0x3a4a2a : color);
-            mb.sphere(0, 0, 0, 0.36, 7, 4, 0.72);
+            /* abdomen and a smaller head section */
+            mb.ovoid(0, 0, -0.06, 0.34, 0.25, 0.36, 10, 7);
+            mb.ovoid(0, -0.04, 0.26, 0.19, 0.15, 0.17, 8, 5);
+            /* the gold skull marking on its back */
             mb.setColorHex(0xd8c060);
-            mb.box(0, 0.24, 0, 0.30, 0.04, 0.30, 2);
-            mb.box(0, 0.20, 0, 0.06, 0.10, 0.34, 2);
+            mb.ovoid(0, 0.22, -0.08, 0.17, 0.045, 0.20, 8, 5);
+            mb.setColorHex(0x2a2018);
+            mb.ovoid(-0.06, 0.25, -0.02, 0.045, 0.03, 0.05, 5, 4);
+            mb.ovoid(0.06, 0.25, -0.02, 0.045, 0.03, 0.05, 5, 4);
             mb.setColorHex(0xe04040);
-            for (var e = -1; e <= 1; e += 2) mb.box(e * 0.12, 0.06, 0.31, 0.08, 0.08, 0.04, 2);
+            eyes(mb, 0, -0.01, 0.40, 0.075, 0.042, 0xe04040, false);
           } },
         { name: 'legs', parent: 'body', offset: [0, 0, 0], mat: 'scaleGreen', build: function (mb) {
             mb.setColorHex(0x24301c);
             for (var i = 0; i < 8; i++) {
               var a = (i / 8) * M.TAU + 0.4;
               var dx = Math.sin(a), dz = Math.cos(a);
-              mb.taper(dx * 0.3, -0.02, dz * 0.3, 0.07, 0.07, 0.04, 0.04, 0.34, dx * 0.28, dz * 0.28, 2);
-              mb.taper(dx * 0.56, 0.30, dz * 0.56, 0.05, 0.05, 0.03, 0.03, -0.44, dx * 0.14, dz * 0.14, 2);
+              /* out and up to the knee, then down to the tip */
+              mb.tube([
+                { x: dx * 0.22, y: -0.02, z: dz * 0.22, r: 0.036 },
+                { x: dx * 0.44, y: 0.18, z: dz * 0.44, r: 0.026 },
+                { x: dx * 0.60, y: 0.24, z: dz * 0.60, r: 0.020 }
+              ], 5, { u: 1, v: 2 });
+              mb.tube([
+                { x: dx * 0.60, y: 0.24, z: dz * 0.60, r: 0.020 },
+                { x: dx * 0.70, y: -0.20, z: dz * 0.70, r: 0.014 },
+                { x: dx * 0.72, y: -0.45, z: dz * 0.72, r: 0.006 }
+              ], 5, { u: 1, v: 2, capStart: false });
             }
           } }
       ]
@@ -364,19 +417,24 @@ var LZ = LZ || {};
         { name: 'root' },
         { name: 'body', parent: 'root', offset: [0, 0.30, 0], mat: 'scaleRed', build: function (mb) {
             mb.setColorHex(0xffffff);
-            mb.sphere(0, 0, 0, 0.34, 7, 4, 1.05);
-            mb.taper(0, 0.16, 0, 0.34, 0.34, 0.14, 0.14, 0.28, 0, 0.06, 2);
-            mb.setColorHex(0xf6f2e6);
-            for (var e = -1; e <= 1; e += 2) mb.box(e * 0.13, 0.12, 0.26, 0.11, 0.13, 0.05, 2);
-            mb.setColorHex(0x1a1620);
-            for (var e2 = -1; e2 <= 1; e2 += 2) mb.box(e2 * 0.13, 0.10, 0.30, 0.05, 0.07, 0.03, 2);
+            /* bulb head with a blow-tube snout */
+            mb.ovoid(0, 0.02, 0, 0.32, 0.30, 0.31, 10, 7);
+            mb.tube([
+              { x: 0, y: 0.10, z: 0.24, r: 0.115 },
+              { x: 0, y: 0.13, z: 0.36, r: 0.075 },
+              { x: 0, y: 0.14, z: 0.42, r: 0.085 }
+            ], 8, { u: 1, v: 2, capStart: false });
+            eyes(mb, 0, 0.11, 0.24, 0.135, 0.062);
           } },
         { name: 'legs', parent: 'root', offset: [0, 0.06, 0], mat: 'scaleRed', build: function (mb) {
             mb.setColorHex(0xc08878);
             for (var i = 0; i < 5; i++) {
               var a = (i / 5) * M.TAU;
-              mb.taper(Math.sin(a) * 0.16, 0, Math.cos(a) * 0.16, 0.11, 0.11, 0.06, 0.06, 0.18,
-                Math.sin(a) * 0.14, Math.cos(a) * 0.14, 2);
+              mb.tube([
+                { x: Math.sin(a) * 0.14, y: 0.12, z: Math.cos(a) * 0.14, r: 0.075 },
+                { x: Math.sin(a) * 0.24, y: 0.01, z: Math.cos(a) * 0.24, r: 0.055 },
+                { x: Math.sin(a) * 0.30, y: -0.05, z: Math.cos(a) * 0.30, r: 0.030 }
+              ], 6, { u: 1, v: 2 });
             }
           } }
       ]
@@ -390,19 +448,26 @@ var LZ = LZ || {};
         { name: 'root' },
         { name: 'body', parent: 'root', offset: [0, 0.42, 0], mat: 'scaleBlue', build: function (mb) {
             mb.setColorHex(color === undefined ? 0xffffff : color);
-            mb.sphere(0, 0, 0, 0.30, 7, 4, 0.85);
+            mb.ovoid(0, 0, 0, 0.29, 0.24, 0.28, 10, 6);
+            /* one big eye, the whole face */
             mb.setColorHex(0xf0e0a0);
-            mb.box(0, 0.14, 0.22, 0.20, 0.14, 0.10, 2);
+            mb.ovoid(0, 0.05, 0.22, 0.14, 0.13, 0.10, 8, 6);
             mb.setColorHex(0x201820);
-            mb.box(0, 0.15, 0.28, 0.10, 0.09, 0.04, 2);
+            mb.ovoid(0, 0.05, 0.29, 0.062, 0.075, 0.045, 6, 5);
           } },
-        { name: 'legs', parent: 'body', offset: [0, -0.1, 0], mat: 'scaleBlue', build: function (mb) {
+        { name: 'legs', parent: 'body', offset: [0, -0.08, 0], mat: 'scaleBlue', build: function (mb) {
             mb.setColorHex(0x2a4a62);
             for (var i = 0; i < 4; i++) {
               var a = (i / 4) * M.TAU + 0.7;
               var dx = Math.sin(a), dz = Math.cos(a);
-              mb.taper(dx * 0.22, 0, dz * 0.22, 0.07, 0.07, 0.05, 0.05, 0.26, dx * 0.26, dz * 0.26, 2);
-              mb.taper(dx * 0.48, 0.26, dz * 0.48, 0.06, 0.06, 0.04, 0.04, -0.34, dx * 0.1, dz * 0.1, 2);
+              mb.tube([
+                { x: dx * 0.16, y: 0, z: dz * 0.16, r: 0.042 },
+                { x: dx * 0.40, y: 0.20, z: dz * 0.40, r: 0.030 }
+              ], 5, { u: 1, v: 2 });
+              mb.tube([
+                { x: dx * 0.40, y: 0.20, z: dz * 0.40, r: 0.030 },
+                { x: dx * 0.52, y: -0.30, z: dz * 0.52, r: 0.014 }
+              ], 5, { u: 1, v: 2, capStart: false });
             }
           } }
       ]
@@ -410,38 +475,80 @@ var LZ = LZ || {};
   }
 
   function wolfRig(color) {
+    var C = color === undefined ? 0xffffff : color;
     return {
       height: 1.0, radius: 0.4,
       def: [
         { name: 'root' },
-        { name: 'body', parent: 'root', offset: [0, 0.62, 0], mat: 'furGrey', build: function (mb) {
-            mb.setColorHex(color === undefined ? 0xffffff : color);
-            mb.taper(0, -0.16, 0, 0.36, 0.86, 0.32, 0.70, 0.34, 0, 0, 1.6);
+        { name: 'body', parent: 'root', offset: [0, 0.60, 0], mat: 'furGrey', build: function (mb) {
+            mb.setColorHex(C);
+            /* barrel chest tapering to the haunches, swept along Z */
+            mb.tube([
+              { x: 0, y: -0.02, z: -0.44, rx: 0.130, ry: 0.140 },
+              { x: 0, y: 0.02, z: -0.22, rx: 0.170, ry: 0.180 },
+              { x: 0, y: 0.03, z: 0.08, rx: 0.185, ry: 0.190 },
+              { x: 0, y: 0.00, z: 0.34, rx: 0.150, ry: 0.155 },
+              { x: 0, y: -0.03, z: 0.46, rx: 0.110, ry: 0.115 }
+            ], 9, { axis: 'z', u: 1, v: 2 });
+            /* ruff of fur at the shoulders */
+            mb.setColorHex(0xd0cccc);
+            mb.tube([
+              { x: 0, y: 0.02, z: 0.20, rx: 0.205, ry: 0.205 },
+              { x: 0, y: 0.02, z: 0.34, rx: 0.185, ry: 0.185 }
+            ], 9, { axis: 'z', u: 1, v: 2, capStart: false, capEnd: false });
           } },
-        { name: 'head', parent: 'body', offset: [0, 0.06, 0.44], mat: 'furGrey', build: function (mb) {
-            mb.setColorHex(color === undefined ? 0xffffff : color);
-            mb.box(0, 0, 0, 0.28, 0.26, 0.30, 2);
-            mb.taper(0, -0.06, 0.16, 0.20, 0.18, 0.13, 0.16, 0.24, 0, 0.10, 2);
-            mb.taper(-0.11, 0.12, -0.02, 0.09, 0.06, 0.03, 0.03, 0.18, -0.02, -0.03, 2);
-            mb.taper(0.11, 0.12, -0.02, 0.09, 0.06, 0.03, 0.03, 0.18, 0.02, -0.03, 2);
+        { name: 'head', parent: 'body', offset: [0, 0.06, 0.48], mat: 'furGrey', build: function (mb) {
+            mb.setColorHex(C);
+            mb.ovoid(0, 0, 0.02, 0.135, 0.135, 0.150, 9, 6);
+            /* muzzle */
+            mb.tube([
+              { x: 0, y: -0.03, z: 0.10, rx: 0.100, ry: 0.095 },
+              { x: 0, y: -0.05, z: 0.24, rx: 0.070, ry: 0.062 },
+              { x: 0, y: -0.06, z: 0.30, rx: 0.052, ry: 0.046 }
+            ], 8, { axis: 'z', u: 1, v: 2, capStart: false });
+            mb.setColorHex(0x201a1c);
+            mb.ovoid(0, -0.05, 0.32, 0.040, 0.032, 0.030, 6, 4);
+            /* ears */
+            for (var sd = -1; sd <= 1; sd += 2) {
+              mb.setColorHex(C);
+              mb.tube([
+                { x: sd * 0.085, y: 0.10, z: -0.03, r: 0.050 },
+                { x: sd * 0.110, y: 0.26, z: -0.07, r: 0.008 }
+              ], 5, { u: 1, v: 2, capStart: false });
+            }
+            /* eyes, yellow and mean */
             mb.setColorHex(0xf0c040);
-            mb.box(-0.09, 0.05, 0.16, 0.07, 0.05, 0.04, 2);
-            mb.box(0.09, 0.05, 0.16, 0.07, 0.05, 0.04, 2);
+            mb.ovoid(-0.075, 0.03, 0.115, 0.038, 0.028, 0.030, 6, 4);
+            mb.ovoid(0.075, 0.03, 0.115, 0.038, 0.028, 0.030, 6, 4);
+            mb.setColorHex(0x1a1418);
+            mb.ovoid(-0.075, 0.03, 0.135, 0.014, 0.020, 0.016, 5, 4);
+            mb.ovoid(0.075, 0.03, 0.135, 0.014, 0.020, 0.016, 5, 4);
           } },
-        { name: 'legFL', parent: 'body', offset: [-0.15, -0.16, 0.26], mat: 'furGrey', build: legBuild },
-        { name: 'legFR', parent: 'body', offset: [0.15, -0.16, 0.26], mat: 'furGrey', build: legBuild },
-        { name: 'legBL', parent: 'body', offset: [-0.15, -0.16, -0.28], mat: 'furGrey', build: legBuild },
-        { name: 'legBR', parent: 'body', offset: [0.15, -0.16, -0.28], mat: 'furGrey', build: legBuild },
-        { name: 'tail', parent: 'body', offset: [0, 0.06, -0.42], mat: 'furGrey', build: function (mb) {
-            mb.setColorHex(0xffffff);
-            mb.taper(0, 0, 0, 0.12, 0.12, 0.05, 0.05, -0.46, 0, -0.16, 2);
+        { name: 'legFL', parent: 'body', offset: [-0.115, -0.08, 0.24], mat: 'furGrey', build: legB },
+        { name: 'legFR', parent: 'body', offset: [0.115, -0.08, 0.24], mat: 'furGrey', build: legB },
+        { name: 'legBL', parent: 'body', offset: [-0.115, -0.08, -0.26], mat: 'furGrey', build: legB },
+        { name: 'legBR', parent: 'body', offset: [0.115, -0.08, -0.26], mat: 'furGrey', build: legB },
+        { name: 'tail', parent: 'body', offset: [0, 0.06, -0.46], mat: 'furGrey', build: function (mb) {
+            mb.setColorHex(C);
+            mb.tube([
+              { x: 0, y: 0, z: 0, r: 0.062 },
+              { x: 0, y: -0.06, z: -0.20, r: 0.070 },
+              { x: 0, y: -0.16, z: -0.36, r: 0.048 },
+              { x: 0, y: -0.26, z: -0.44, r: 0.012 }
+            ], 7, { axis: 'z', u: 1, v: 2 });
           } }
       ]
     };
-    function legBuild(mb) {
-      mb.setColorHex(0xd8d8d8);
-      mb.taper(0, -0.42, 0, 0.11, 0.11, 0.09, 0.09, 0.42, 0, 0, 2);
-      mb.box(0, -0.44, 0.04, 0.13, 0.08, 0.18, 2);
+    function legB(mb) {
+      mb.setColorHex(0xdedede);
+      mb.tube([
+        { x: 0, y: 0, z: 0, r: 0.062 },
+        { x: 0, y: -0.20, z: 0.01, r: 0.046 },
+        { x: 0, y: -0.40, z: 0.00, r: 0.038 }
+      ], 6, { u: 1, v: 3 });
+      /* paw */
+      mb.setColorHex(0x9a9694);
+      mb.ovoid(0, -0.44, 0.03, 0.052, 0.036, 0.070, 6, 4);
     }
   }
 
@@ -452,15 +559,22 @@ var LZ = LZ || {};
         { name: 'root' },
         { name: 'body', parent: 'root', offset: [0, 0.9, 0], mat: 'evil', build: function (mb) {
             mb.setColorHex(color === undefined ? 0xffffff : color);
-            mb.sphere(0, 0, 0, 0.34, 7, 4, 1.1);
-            mb.taper(0, -0.22, 0, 0.44, 0.44, 0.06, 0.06, -0.5, 0, 0, 1.4);
+            /* hooded head over a tattered trailing shroud */
+            mb.ovoid(0, 0.02, 0, 0.30, 0.32, 0.29, 10, 7);
+            mb.tube([
+              { x: 0, y: -0.20, z: 0, r: 0.30 },
+              { x: 0, y: -0.55, z: 0, r: 0.24 },
+              { x: 0, y: -0.85, z: 0, r: 0.13 },
+              { x: 0, y: -1.05, z: 0, r: 0.02 }
+            ], 9, { u: 1, v: 2, capStart: false });
             mb.setColorHex(0xffd070);
-            mb.box(-0.12, 0.08, 0.26, 0.08, 0.10, 0.05, 2);
-            mb.box(0.12, 0.08, 0.26, 0.08, 0.10, 0.05, 2);
+            eyes(mb, 0, 0.05, 0.22, 0.105, 0.052, 0xffd070, false);
           } },
-        { name: 'lamp', parent: 'body', offset: [0.3, -0.18, 0.1], mat: 'gemGreen', build: function (mb) {
+        { name: 'lamp', parent: 'body', offset: [0.30, -0.18, 0.12], mat: 'gemGreen', build: function (mb) {
             mb.setColorHex(0x80ffc0);
-            mb.sphere(0, 0, 0, 0.10, 6, 3, 1);
+            mb.ovoid(0, 0, 0, 0.085, 0.10, 0.085, 7, 5);
+            mb.setColorHex(0x3a3a44);
+            mb.tube([{ x: 0, y: 0.10, z: 0, r: 0.020 }, { x: 0, y: 0.20, z: 0, r: 0.016 }], 5, { u: 1, v: 2 });
           } }
       ]
     };
@@ -471,19 +585,28 @@ var LZ = LZ || {};
       height: 0.5, radius: 0.3,
       def: [
         { name: 'root' },
-        { name: 'body', parent: 'root', offset: [0, 0.2, 0], mat: 'scaleRed', build: function (mb) {
+        { name: 'body', parent: 'root', offset: [0, 0.18, 0], mat: 'scaleRed', build: function (mb) {
             mb.setColorHex(color === undefined ? 0xffffff : color);
-            mb.sphere(0, 0, 0, 0.28, 7, 4, 0.6);
+            mb.ovoid(0, 0, -0.04, 0.24, 0.15, 0.27, 9, 6);
             mb.setColorHex(0x2a1a14);
-            mb.box(0, 0.02, 0.24, 0.14, 0.10, 0.14, 2);
-            mb.taper(0, 0.06, 0.30, 0.06, 0.06, 0.02, 0.02, 0.14, 0, 0.06, 2);
+            mb.ovoid(0, 0.01, 0.20, 0.13, 0.10, 0.11, 7, 5);
+            /* horn */
+            mb.tube([
+              { x: 0, y: 0.06, z: 0.25, r: 0.026 },
+              { x: 0, y: 0.14, z: 0.36, r: 0.008 }
+            ], 5, { u: 1, v: 2, capStart: false });
+            mb.setColorHex(0xffb020);
+            mb.ovoid(-0.06, 0.03, 0.26, 0.024, 0.022, 0.020, 5, 4);
+            mb.ovoid(0.06, 0.03, 0.26, 0.024, 0.022, 0.020, 5, 4);
           } },
-        { name: 'legs', parent: 'body', offset: [0, -0.1, 0], mat: 'scaleRed', build: function (mb) {
+        { name: 'legs', parent: 'body', offset: [0, -0.08, 0], mat: 'scaleRed', build: function (mb) {
             mb.setColorHex(0x1a1410);
             for (var i = 0; i < 6; i++) {
               var a = (i / 6) * M.TAU;
-              mb.taper(Math.sin(a) * 0.2, 0, Math.cos(a) * 0.2, 0.05, 0.05, 0.03, 0.03, -0.2,
-                Math.sin(a) * 0.12, Math.cos(a) * 0.12, 2);
+              mb.tube([
+                { x: Math.sin(a) * 0.14, y: 0.02, z: Math.cos(a) * 0.14, r: 0.024 },
+                { x: Math.sin(a) * 0.26, y: -0.10, z: Math.cos(a) * 0.26, r: 0.010 }
+              ], 4, { u: 1, v: 2 });
             }
           } }
       ]
@@ -497,26 +620,37 @@ var LZ = LZ || {};
         { name: 'root' },
         { name: 'body', parent: 'root', offset: [0, 0.5, 0], mat: 'stoneblock', build: function (mb) {
             mb.setColorHex(0xffffff);
-            mb.taper(0, 0, 0, 0.72, 0.5, 0.86, 0.56, 0.9, 0, 0, 1.4);
-            mb.box(0, 1.06, 0, 0.5, 0.3, 0.46, 1.6);
+            /* a carved figure: rounded torso, not a crate */
+            mb.tube([
+              { x: 0, y: 0, z: 0, rx: 0.36, rz: 0.28 },
+              { x: 0, y: 0.42, z: 0, rx: 0.44, rz: 0.32 },
+              { x: 0, y: 0.86, z: 0, rx: 0.40, rz: 0.30 }
+            ], 9, { u: 1, v: 2 });
+            mb.ovoid(0, 1.08, 0, 0.26, 0.24, 0.24, 9, 6);
             mb.setColorHex(0xe05030);
-            mb.box(-0.13, 1.10, 0.24, 0.10, 0.12, 0.04, 2);
-            mb.box(0.13, 1.10, 0.24, 0.10, 0.12, 0.04, 2);
+            mb.ovoid(-0.11, 1.12, 0.20, 0.055, 0.050, 0.040, 6, 4);
+            mb.ovoid(0.11, 1.12, 0.20, 0.055, 0.050, 0.040, 6, 4);
           } },
-        { name: 'armL', parent: 'body', offset: [-0.48, 0.72, 0], mat: 'stoneblock', build: function (mb) {
-            mb.setColorHex(0xf0f0f0);
-            mb.taper(0, -0.6, 0, 0.24, 0.24, 0.3, 0.3, 0.62, 0, 0, 1.6);
-          } },
-        { name: 'armR', parent: 'body', offset: [0.48, 0.72, 0], mat: 'stoneblock', build: function (mb) {
-            mb.setColorHex(0xf0f0f0);
-            mb.taper(0, -0.6, 0, 0.24, 0.24, 0.3, 0.3, 0.62, 0, 0, 1.6);
-          } },
+        { name: 'armL', parent: 'body', offset: [-0.44, 0.76, 0], mat: 'stoneblock', build: armB },
+        { name: 'armR', parent: 'body', offset: [0.44, 0.76, 0], mat: 'stoneblock', build: armB },
         { name: 'base', parent: 'root', offset: [0, 0, 0], mat: 'stoneblock', build: function (mb) {
             mb.setColorHex(0xd0d0d0);
-            mb.taper(0, 0, 0, 0.92, 0.7, 0.72, 0.5, 0.5, 0, 0, 1.2);
+            mb.tube([
+              { x: 0, y: 0, z: 0, rx: 0.52, rz: 0.44 },
+              { x: 0, y: 0.28, z: 0, rx: 0.46, rz: 0.38 },
+              { x: 0, y: 0.50, z: 0, rx: 0.38, rz: 0.30 }
+            ], 9, { u: 1, v: 2 });
           } }
       ]
     };
+    function armB(mb) {
+      mb.setColorHex(0xf0f0f0);
+      mb.tube([
+        { x: 0, y: 0, z: 0, r: 0.135 },
+        { x: 0, y: -0.42, z: 0, r: 0.115 },
+        { x: 0, y: -0.66, z: 0, r: 0.150 }
+      ], 7, { u: 1, v: 2 });
+    }
   }
 
   function beamosRig() {
@@ -526,14 +660,19 @@ var LZ = LZ || {};
         { name: 'root' },
         { name: 'column', parent: 'root', offset: [0, 0, 0], mat: 'stoneblockDark', build: function (mb) {
             mb.setColorHex(0xffffff);
-            mb.cylinder(0, 0, 0, 0.62, 0.5, 0.4, 8, true, 1.2);
-            mb.cylinder(0, 0.4, 0, 0.42, 0.40, 1.1, 8, false, 1.2);
+            mb.tube([
+              { x: 0, y: 0, z: 0, r: 0.58 },
+              { x: 0, y: 0.26, z: 0, r: 0.50 },
+              { x: 0, y: 0.42, z: 0, r: 0.38 },
+              { x: 0, y: 1.28, z: 0, r: 0.34 },
+              { x: 0, y: 1.44, z: 0, r: 0.40 }
+            ], 9, { u: 1, v: 2 });
           } },
-        { name: 'eye', parent: 'root', offset: [0, 1.62, 0], mat: 'gemRed', build: function (mb) {
+        { name: 'eye', parent: 'root', offset: [0, 1.68, 0], mat: 'gemRed', build: function (mb) {
             mb.setColorHex(0xffffff);
-            mb.sphere(0, 0, 0, 0.36, 8, 5, 0.9);
+            mb.ovoid(0, 0, 0, 0.32, 0.30, 0.32, 10, 7);
             mb.setColorHex(0x201020);
-            mb.box(0, 0, 0.30, 0.16, 0.22, 0.10, 2);
+            mb.ovoid(0, 0, 0.26, 0.10, 0.14, 0.08, 7, 5);
           } }
       ]
     };
@@ -546,17 +685,35 @@ var LZ = LZ || {};
         { name: 'root' },
         { name: 'seg1', parent: 'root', offset: [0, 0.4, 0], mat: 'scaleRed', build: function (mb) {
             mb.setColorHex(0xc0a070);
-            mb.cylinder(0, -0.4, 0, 0.42, 0.36, 0.9, 8, false, 1.2);
+            mb.tube([
+              { x: 0, y: -0.50, z: 0, r: 0.30 },
+              { x: 0, y: -0.20, z: 0, r: 0.36 },
+              { x: 0, y: 0.10, z: 0, r: 0.34 },
+              { x: 0, y: 0.42, z: 0, r: 0.30 }
+            ], 9, { u: 1, v: 2 });
+            /* segment rings */
+            mb.setColorHex(0xa8875c);
+            for (var i = 0; i < 3; i++) {
+              var y = -0.30 + i * 0.26;
+              mb.tube([{ x: 0, y: y, z: 0, r: 0.355 }, { x: 0, y: y + 0.045, z: 0, r: 0.355 }],
+                9, { u: 1, v: 2, capStart: false, capEnd: false });
+            }
           } },
         { name: 'head', parent: 'seg1', offset: [0, 0.5, 0], mat: 'scaleRed', build: function (mb) {
             mb.setColorHex(0xd8b080);
-            mb.sphere(0, 0, 0, 0.38, 8, 4, 1.0);
+            mb.ovoid(0, 0, 0, 0.34, 0.32, 0.34, 10, 7);
             mb.setColorHex(0x501818);
-            mb.cylinder(0, 0.1, 0, 0.28, 0.30, 0.26, 8, true, 1.4);
+            mb.tube([
+              { x: 0, y: 0.14, z: 0, r: 0.26 },
+              { x: 0, y: 0.30, z: 0, r: 0.22 }
+            ], 9, { u: 1, v: 2, capStart: false });
             mb.setColorHex(0xf0e0c0);
-            for (var i = 0; i < 6; i++) {
-              var a = i / 6 * M.TAU;
-              mb.taper(Math.sin(a) * 0.26, 0.30, Math.cos(a) * 0.26, 0.07, 0.07, 0.02, 0.02, 0.16, 0, 0, 2);
+            for (var i = 0; i < 7; i++) {
+              var a = i / 7 * M.TAU;
+              mb.tube([
+                { x: Math.sin(a) * 0.23, y: 0.28, z: Math.cos(a) * 0.23, r: 0.035 },
+                { x: Math.sin(a) * 0.19, y: 0.44, z: Math.cos(a) * 0.19, r: 0.004 }
+              ], 4, { u: 1, v: 2, capStart: false });
             }
           } }
       ]
@@ -1024,11 +1181,14 @@ var LZ = LZ || {};
     this.setModel(LZ.charModel(g.r, 'moblin_' + (big ? 'b' : 's'), function () {
       return LZ.Models.humanoid({
         build: big ? 'heavy' : 'adult', scale: scale,
-        skin: big ? 0x7a8a52 : 0x8f9a5e, cloth: 0x6a4a30, clothDark: 0x44301e,
-        trim: 0x8a7a50, pants: 0x4a3a24, boots: 0x3a2c1c,
+        skin: big ? 0x86935c : 0x9aa668, cloth: 0x5c3f28, clothDark: 0x3a2818,
+        trim: 0x8a7a50, pants: 0x4a3a24, boots: 0x3a2c1c, beltColor: 0x2e2216,
         hair: 0x2a2418, hairStyle: 'bald', hat: 'none',
         clothTex: 'leather', skinTex: 'scaleGreen', bootTex: 'leatherDark',
-        glove: 0x5a4630, gloveTex: 'leatherDark', eyeColor: 0xd04030, mouth: true
+        under: big ? 0x86935c : 0x9aa668,
+        glove: 0x5a4630, gloveTex: 'leatherDark',
+        eyeColor: 0xf0a020, faceStyle: 'angry',
+        muzzle: true, muzzleColor: big ? 0x9aa668 : 0xa8b478, skirt: false
       });
     }, LZ.Models.getHumanoidClips()));
     this.big = big;
@@ -1064,11 +1224,13 @@ var LZ = LZ || {};
     this.setModel(LZ.charModel(g.r, 'stalfos', function () {
       return LZ.Models.humanoid({
         build: 'adult', scale: 1.06,
-        skin: 0xe4dcc0, cloth: 0xd8d0b4, clothDark: 0xa89c80,
-        trim: 0x8a7f60, pants: 0xbcb298, boots: 0x6a6050,
+        skin: 0xe4dcc0, cloth: 0x6a6458, clothDark: 0x4a463e,
+        trim: 0x8a7f60, pants: 0xd8d0b4, boots: 0x5a5348, beltColor: 0x3a352e,
         hair: 0x8a8068, hairStyle: 'bald', hat: 'none',
-        clothTex: 'bone', skinTex: 'bone', bootTex: 'leatherDark',
-        glove: 0xd8d0b4, gloveTex: 'bone', eyeColor: 0xff6020, mouth: false, skirt: false
+        clothTex: 'metalRust', skinTex: 'bone', bootTex: 'leatherDark',
+        under: 0xd8d0b4,
+        glove: 0xd8d0b4, gloveTex: 'bone',
+        eyeColor: 0xff6020, faceStyle: 'skull', skirt: false
       });
     }, LZ.Models.getHumanoidClips()));
     this.guardArc = 0.95;
@@ -1108,11 +1270,13 @@ var LZ = LZ || {};
     this.setModel(LZ.charModel(g.r, 'gibdo', function () {
       return LZ.Models.humanoid({
         build: 'lanky', scale: 1.0,
-        skin: 0xcfc4a4, cloth: 0xd8cdb0, clothDark: 0xa89c80,
+        skin: 0xcfc4a4, cloth: 0xc8bda0, clothDark: 0xa89c80,
         trim: 0x8a7f60, pants: 0xbcb298, boots: 0x9a9078,
         hair: 0x9a9078, hairStyle: 'bald', hat: 'none',
         clothTex: 'clothWhite', skinTex: 'clothWhite', bootTex: 'clothWhite',
-        glove: 0xd8cdb0, gloveTex: 'clothWhite', eyeColor: 0x101014, mouth: false
+        under: 0xd8cdb0,
+        glove: 0xd8cdb0, gloveTex: 'clothWhite', eyeColor: 0xc83828,
+        faceStyle: 'wrapped', skirt: false
       });
     }, LZ.Models.getHumanoidClips()));
     this.lockHeight = 1.0;

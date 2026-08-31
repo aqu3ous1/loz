@@ -216,13 +216,41 @@ var LZ = LZ || {};
           }
           prev = row;
         }
+        if (o.muzzle) {
+          /* a boar snout with tusks: turns the same rig into a brute */
+          mb.setColorHex(o.muzzleColor === undefined ? skinC : o.muzzleColor);
+          mb.tube([
+            { x: 0, y: HCY - HY * 0.20, z: HZ * 0.72, rx: HX * 0.44, ry: HY * 0.36 },
+            { x: 0, y: HCY - HY * 0.28, z: HZ * 1.06, rx: HX * 0.36, ry: HY * 0.28 },
+            { x: 0, y: HCY - HY * 0.30, z: HZ * 1.22, rx: HX * 0.34, ry: HY * 0.26 }
+          ], 8, { axis: 'z', u: PL, v: PL, capStart: false });
+          mb.setColorHex(0x2a2018);
+          mb.ovoid(-HX * 0.11, HCY - HY * 0.26, HZ * 1.24, HX * 0.07, HY * 0.06, HZ * 0.04, 5, 4);
+          mb.ovoid(HX * 0.11, HCY - HY * 0.26, HZ * 1.24, HX * 0.07, HY * 0.06, HZ * 0.04, 5, 4);
+          mb.setColorHex(0xe8e0c8);
+          for (var tk = -1; tk <= 1; tk += 2) {
+            mb.tube([
+              { x: tk * HX * 0.30, y: HCY - HY * 0.44, z: HZ * 0.96, r: 0.024 * s },
+              { x: tk * HX * 0.36, y: HCY - HY * 0.08, z: HZ * 1.02, r: 0.006 * s }
+            ], 4, { u: PL, v: PL, capStart: false });
+          }
+        }
         /* pointed Hylian ears: small, swept back, barely wider than the head */
         for (var sd2 = -1; sd2 <= 1; sd2 += 2) {
-          mb.tube([
-            { x: sd2 * HX * 0.80, y: HCY - HY * 0.10, z: -HZ * 0.02, r: 0.026 * s },
-            { x: sd2 * HX * 1.00, y: HCY + HY * 0.16, z: -HZ * 0.26, r: 0.019 * s },
-            { x: sd2 * HX * 1.14, y: HCY + HY * 0.42, z: -HZ * 0.46, r: 0.005 * s }
-          ], 5, { u: PL, v: PL, capStart: false });
+          if (o.muzzle) {
+            mb.setColorHex(o.muzzleColor === undefined ? skinC : o.muzzleColor);
+            mb.tube([
+              { x: sd2 * HX * 0.82, y: HCY + HY * 0.10, z: -HZ * 0.06, rx: 0.030 * s, rz: 0.055 * s },
+              { x: sd2 * HX * 1.30, y: HCY + HY * 0.34, z: -HZ * 0.16, rx: 0.022 * s, rz: 0.045 * s },
+              { x: sd2 * HX * 1.60, y: HCY + HY * 0.30, z: -HZ * 0.22, rx: 0.006 * s, rz: 0.016 * s }
+            ], 5, { u: PL, v: PL, capStart: false });
+          } else {
+            mb.tube([
+              { x: sd2 * HX * 0.80, y: HCY - HY * 0.10, z: -HZ * 0.02, r: 0.026 * s },
+              { x: sd2 * HX * 1.00, y: HCY + HY * 0.16, z: -HZ * 0.26, r: 0.019 * s },
+              { x: sd2 * HX * 1.14, y: HCY + HY * 0.42, z: -HZ * 0.46, r: 0.005 * s }
+            ], 5, { u: PL, v: PL, capStart: false });
+          }
         }
       }
     });

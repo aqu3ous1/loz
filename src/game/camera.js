@@ -22,9 +22,9 @@ var LZ = LZ || {};
 
     this.yaw = 0;
     this.pitch = 0.30;
-    this.dist = 5.2;
-    this.wantDist = 5.2;
-    this.height = 1.15;
+    this.dist = 4.3;
+    this.wantDist = 4.3;
+    this.height = 1.05;
 
     this.mode = 'follow';     /* follow | lock | firstPerson | fixed | cutscene */
     this.lockTarget = null;
@@ -142,7 +142,7 @@ var LZ = LZ || {};
       var cpitch = Math.cos(this.pitch);
       V3.set(_desired,
         _focus[0] + Math.sin(this.yaw) * this.dist * cpitch,
-        _focus[1] + this.height * 0.55 + Math.sin(this.pitch) * this.dist + 0.55,
+        _focus[1] + this.height * 0.28 + Math.sin(this.pitch) * this.dist + 0.34,
         _focus[2] + Math.cos(this.yaw) * this.dist * cpitch);
       V3.copy(this.target, _focus);
       this.target[1] += 0.10;
