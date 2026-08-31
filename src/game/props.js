@@ -47,26 +47,50 @@ var LZ = LZ || {};
     var trunkR = 0.20 * s;
     var bark = b.mb(o.barkMat || 'bark');
     bark.setColorHex(o.barkColor === undefined ? 0xffffff : o.barkColor);
-    bark.cylinder(x, y, z, trunkR * 1.35, trunkR * 0.8, trunkH, 6, false, 1.6);
-    /* a couple of limbs, angled by a cheap hash so no two trees match */
-    var limbs = 2 + Math.floor(rnd(seed + 1) * 2);
+    /* a flared root base and a slight lean: a straight cylinder on a lawn is
+       the tell that a tree was placed by a loop rather than grown */
+    var lean = (rnd(seed + 41) - 0.5) * 0.30 * s;
+    var lz2 = (rnd(seed + 43) - 0.5) * 0.30 * s;
+    bark.tube([
+      { x: x, y: y - 0.05, z: z, r: trunkR * 1.85 },
+      { x: x, y: y + trunkH * 0.10, z: z, r: trunkR * 1.30 },
+      { x: x + lean * 0.35, y: y + trunkH * 0.45, z: z + lz2 * 0.35, r: trunkR * 1.02 },
+      { x: x + lean * 0.80, y: y + trunkH * 0.80, z: z + lz2 * 0.80, r: trunkR * 0.86 },
+      { x: x + lean, y: y + trunkH, z: z + lz2, r: trunkR * 0.72 }
+    ], 7, { v: 0.7, capStart: false });
+    /* limbs curving up and out of the trunk */
+    var limbs = 3 + Math.floor(rnd(seed + 1) * 2);
     for (var i = 0; i < limbs; i++) {
-      var a = rnd(seed + i * 3) * M.TAU;
-      var lh = trunkH * (0.55 + rnd(seed + i * 5) * 0.25);
-      var lx = Math.sin(a) * 0.42 * s, lz = Math.cos(a) * 0.42 * s;
-      bark.taper(x + lx * 0.4, y + lh, z + lz * 0.4,
-        trunkR * 0.9, trunkR * 0.9, trunkR * 0.42, trunkR * 0.42, 0.7 * s, lx, lz, 2.0);
+      var a = (i / limbs) * M.TAU + rnd(seed + i * 3) * 0.9;
+      var lh = trunkH * (0.52 + rnd(seed + i * 5) * 0.26);
+      var len = (0.55 + rnd(seed + i * 11) * 0.40) * s;
+      var sa = Math.sin(a), ca = Math.cos(a);
+      bark.tube([
+        { x: x + lean * 0.5 + sa * trunkR * 0.7, y: y + lh, z: z + lz2 * 0.5 + ca * trunkR * 0.7,
+          r: trunkR * 0.52 },
+        { x: x + lean * 0.6 + sa * len, y: y + lh + len * 0.55, z: z + lz2 * 0.6 + ca * len,
+          r: trunkR * 0.34 },
+        { x: x + lean * 0.7 + sa * len * 1.7, y: y + lh + len * 1.05,
+          z: z + lz2 * 0.7 + ca * len * 1.7, r: trunkR * 0.16 }
+      ], 5);
     }
+    /* Crown: a wide, slightly flattened cluster rather than one ball. The
+       era's trees read as a mass of foliage sitting low over the branches. */
     var leaf = b.mb(o.leafMat || 'leaves');
     leaf.setColorHex(o.leafColor === undefined ? 0xffffff : o.leafColor);
-    var cy = y + trunkH * 0.92;
-    var blobs = o.blobs || 3;
-    var R = (1.15 + rnd(seed + 9) * 0.45) * s;
+    var cy = y + trunkH * 0.94;
+    var R = (1.20 + rnd(seed + 9) * 0.45) * s;
+    var tipX = x + lean, tipZ = z + lz2;
+    leaf.ovoid(tipX, cy + R * 0.44, tipZ, R * 1.06, R * 0.80, R * 1.02, 9, 6);
+    var blobs = o.blobs === undefined ? 4 : o.blobs;
     for (var k = 0; k < blobs; k++) {
-      var ba = rnd(seed + 20 + k) * M.TAU;
-      var br = k === 0 ? 0 : R * 0.52;
-      leaf.sphere(x + Math.sin(ba) * br, cy + (k === 0 ? R * 0.42 : rnd(seed + 30 + k) * R * 0.5),
-        z + Math.cos(ba) * br, R * (k === 0 ? 1 : 0.72), 7, 4, 0.82);
+      var ba = (k / blobs) * M.TAU + rnd(seed + 20 + k) * 0.8;
+      var br = R * (0.56 + rnd(seed + 26 + k) * 0.22);
+      var bs = R * (0.52 + rnd(seed + 34 + k) * 0.24);
+      leaf.ovoid(tipX + Math.sin(ba) * br,
+        cy + R * (0.16 + rnd(seed + 30 + k) * 0.46),
+        tipZ + Math.cos(ba) * br,
+        bs, bs * 0.82, bs, 8, 5);
     }
     if (o.collide !== false && b.col) {
       b.col.add(C.cyl(x, y, z, trunkR * 1.5, trunkH, { surface: 'wood' }));
@@ -100,13 +124,24 @@ var LZ = LZ || {};
     var h = (2.4 + rnd(seed) * 1.2) * s;
     var bark = b.mb('barkDead');
     bark.setColorHex(o.color === undefined ? 0xffffff : o.color);
-    bark.cylinder(x, y, z, 0.22 * s, 0.09 * s, h, 5, false, 1.6);
-    for (var i = 0; i < 4; i++) {
-      var a = (i / 4) * M.TAU + rnd(seed + i) * 1.4;
-      var yy = y + h * (0.45 + rnd(seed + i * 3) * 0.45);
+    bark.tube([
+      { x: x, y: y - 0.05, z: z, r: 0.30 * s },
+      { x: x, y: y + h * 0.18, z: z, r: 0.19 * s },
+      { x: x, y: y + h * 0.62, z: z, r: 0.13 * s },
+      { x: x, y: y + h, z: z, r: 0.06 * s }
+    ], 6, { v: 0.7, capStart: false });
+    for (var i = 0; i < 5; i++) {
+      var a = (i / 5) * M.TAU + rnd(seed + i) * 1.4;
+      var yy = y + h * (0.42 + rnd(seed + i * 3) * 0.46);
       var len = (0.7 + rnd(seed + i * 7) * 0.7) * s;
-      bark.taper(x, yy, z, 0.10 * s, 0.10 * s, 0.03 * s, 0.03 * s, len * 0.7,
-        Math.sin(a) * len, Math.cos(a) * len, 2.0);
+      var sa = Math.sin(a), ca = Math.cos(a);
+      /* the crook where a dead branch bends up before it forks */
+      bark.tube([
+        { x: x, y: yy, z: z, r: 0.11 * s },
+        { x: x + sa * len * 0.5, y: yy + len * 0.30, z: z + ca * len * 0.5, r: 0.07 * s },
+        { x: x + sa * len * 0.9, y: yy + len * 0.74, z: z + ca * len * 0.9, r: 0.04 * s },
+        { x: x + sa * len * 1.15, y: yy + len * 1.10, z: z + ca * len * 1.15, r: 0.012 * s }
+      ], 5);
     }
     if (b.col) b.col.add(C.cyl(x, y, z, 0.28 * s, h * 0.8, { surface: 'wood' }));
   };
