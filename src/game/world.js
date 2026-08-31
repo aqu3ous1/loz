@@ -130,8 +130,17 @@ var LZ = LZ || {};
     var f = this.field, area = this.area;
     var mats = area.groundMats || ['grass'];
     var builders = {};
+    var blendBuilders = {};
     var i, j;
     function mb(name) { return builders[name] || (builders[name] = new GL.MeshBuilder()); }
+    /* A second pass per material, drawn over the opaque ground with per-vertex
+       alpha. Assigning one material per quad makes every path edge a staircase
+       along the grid; splatting the minority materials back over the quad with
+       alpha 1 at their own corners and 0 elsewhere feathers the join across
+       the triangle instead. */
+    function mbBlend(name) {
+      return blendBuilders[name] || (blendBuilders[name] = new GL.MeshBuilder());
+    }
 
     var tintFn = area.groundTint || null;
     /* Per-material average tones, used to feather the seam where two
@@ -214,19 +223,13 @@ var LZ = LZ || {};
            smears it to flat colour. */
         var us = f.cell / 2.7;
 
+        /* Corner shades are the material's own, untinted. An earlier version
+           pulled minority corners toward their material's tone to fake a
+           feathered join; with real splatting below that tint is applied a
+           second time on top of the correct texture and turns dirt edges
+           orange, so the shade stays neutral here. */
         var c00 = vcol(x0, z0, h00, t00), c10 = vcol(x1, z0, h10, t10);
         var c01 = vcol(x0, z1, h01, t01), c11 = vcol(x1, z1, h11, t11);
-        /* corners whose own material differs from the quad's get pulled
-           toward their material's tone, which feathers the boundary */
-        var quadTone = tone(best);
-        function blendCorner(c, ct) {
-          if (ct === best) return;
-          var ot = tone(ct);
-          var k = 0.55;
-          for (var q = 0; q < 3; q++) c[q] *= (1 - k) + k * (ot[q] / (quadTone[q] || 1));
-        }
-        blendCorner(c00, t00); blendCorner(c10, t10);
-        blendCorner(c01, t01); blendCorner(c11, t11);
 
         var n = V3.create(0, 1, 0);
         f.normal((x0 + x1) / 2, (z0 + z1) / 2, n);
@@ -251,12 +254,55 @@ var LZ = LZ || {};
         /* triangulation must match Heightfield.height() */
         b.i.push(a, dd, cc);
         b.i.push(a, cc, bb);
+
+        /* splat every other material present on this quad back over it */
+        if (t00 !== best || t10 !== best || t01 !== best || t11 !== best) {
+          var corners = [t00, t10, t11, t01];
+          var done = {};
+          for (var ci = 0; ci < 4; ci++) {
+            var ct = corners[ci];
+            if (ct === best || done[ct]) continue;
+            done[ct] = 1;
+            var bn = mats[ct] || mats[0];
+            var sb = mbBlend(bn);
+            var sc = [
+              [c00[0], c00[1], c00[2], t00 === ct ? 1 : 0],
+              [c10[0], c10[1], c10[2], t10 === ct ? 1 : 0],
+              [c11[0], c11[1], c11[2], t11 === ct ? 1 : 0],
+              [c01[0], c01[1], c01[2], t01 === ct ? 1 : 0]
+            ];
+            var sa, sbv, scv, sd;
+            if (Math.abs(n[1]) < 0.62) {
+              var alongX2 = Math.abs(n[0]) < Math.abs(n[2]);
+              var q0 = alongX2 ? x0 : z0, q1 = alongX2 ? x1 : z1;
+              var uA2 = q0 * us, uB2 = q1 * us;
+              sa = sb.vert(x0, h00, z0, n[0], n[1], n[2], uA2, -h00 * us, sc[0]);
+              sbv = sb.vert(x1, h10, z0, n[0], n[1], n[2], alongX2 ? uB2 : uA2, -h10 * us, sc[1]);
+              scv = sb.vert(x1, h11, z1, n[0], n[1], n[2], uB2, -h11 * us, sc[2]);
+              sd = sb.vert(x0, h01, z1, n[0], n[1], n[2], alongX2 ? uA2 : uB2, -h01 * us, sc[3]);
+            } else {
+              var su0 = (i * us) % 8, sv0 = (j * us) % 8;
+              sa = sb.vert(x0, h00, z0, n[0], n[1], n[2], su0, sv0, sc[0]);
+              sbv = sb.vert(x1, h10, z0, n[0], n[1], n[2], su0 + us, sv0, sc[1]);
+              scv = sb.vert(x1, h11, z1, n[0], n[1], n[2], su0 + us, sv0 + us, sc[2]);
+              sd = sb.vert(x0, h01, z1, n[0], n[1], n[2], su0, sv0 + us, sc[3]);
+            }
+            sb.i.push(sa, sd, scv);
+            sb.i.push(sa, scv, sbv);
+          }
+        }
       }
     }
     for (var nm in builders) {
       var built = builders[nm];
       if (!built.i.length) continue;
       this.terrainMeshes.push({ mesh: built.build(this.r), mat: nm, tris: built.i.length / 3 });
+    }
+    for (var bn2 in blendBuilders) {
+      var bb2 = blendBuilders[bn2];
+      if (!bb2.i.length) continue;
+      this.terrainMeshes.push({ mesh: bb2.build(this.r), mat: bn2, blend: true,
+        tris: bb2.i.length / 3 });
     }
   };
 
@@ -381,7 +427,13 @@ var LZ = LZ || {};
 
     for (i = 0; i < this.terrainMeshes.length; i++) {
       var tm = this.terrainMeshes[i];
-      r.submit(tm.mesh, this._identity, a.mat[tm.mat] || a.mat.white);
+      if (tm.blend) {
+        r.submit(tm.mesh, this._identity, a.frameMat(tm.mat, {
+          blend: 'alpha', depthWrite: false, depthOffset: -1, queue: 1
+        }));
+      } else {
+        r.submit(tm.mesh, this._identity, a.mat[tm.mat] || a.mat.white);
+      }
     }
     for (i = 0; i < this.staticMeshes.length; i++) {
       var sm = this.staticMeshes[i];

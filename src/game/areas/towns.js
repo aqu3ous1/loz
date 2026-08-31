@@ -132,7 +132,7 @@ var LZ = LZ || {};
       P.fence(ctx.batch, 22, -14, 22, 14, w.groundHeight(22, 0), {});
       P.stall(ctx.batch, -6, w.groundHeight(-6, 6), 6, { yaw: 0.6, awning: 'clothRed' });
 
-      K.forest(ctx, { seed: 12, count: 96, x0: -44, x1: 44, z0: -44, z1: 44, minDist: 4,
+      K.forest(ctx, { seed: 12, count: 74, x0: -44, x1: 44, z0: -44, z1: 44, minDist: 4.5,
         kind: 'mixed', filter: function (x, z) {
           return Math.abs(x) > 16 || Math.abs(z) > 22;
         } });
