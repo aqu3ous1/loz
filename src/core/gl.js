@@ -767,6 +767,70 @@ var LZ = LZ || {};
   };
 
   /* two crossed vertical quads -- the classic N64 foliage/grass billboard */
+  /* A flat swept ribbon: petals, fins, leaves, cloth. tube() can only ring
+     around one fixed axis, so anything that fans outward from a centre has to
+     be built as a strip whose cross-section follows the path. Both faces are
+     emitted with opposite normals, so the strip lights correctly from behind
+     without needing a two-sided material.
+       pts:  [{x,y,z,w}]  centreline with half-width at each station
+       side: in-plane width direction (normalised); the strip's normal is the
+             cross product of the path tangent and this. */
+  MeshBuilder.prototype.ribbon = function (pts, side, opts) {
+    opts = opts || {};
+    var uScale = opts.u === undefined ? 1 : opts.u;
+    var vScale = opts.v === undefined ? 1 : opts.v;
+    var n = pts.length;
+    if (n < 2) return this;
+    var front = [], back = [];
+    var run = 0;
+    for (var i = 0; i < n; i++) {
+      var p = pts[i];
+      var nx = pts[Math.min(i + 1, n - 1)], pv = pts[Math.max(i - 1, 0)];
+      var tx = (nx.x || 0) - (pv.x || 0), ty = (nx.y || 0) - (pv.y || 0), tz = (nx.z || 0) - (pv.z || 0);
+      var tl = Math.sqrt(tx * tx + ty * ty + tz * tz) || 1;
+      tx /= tl; ty /= tl; tz /= tl;
+      /* re-orthogonalise the width direction against the tangent so the strip
+         does not pinch where the path turns */
+      var sx = side[0], sy = side[1], sz = side[2];
+      var d = sx * tx + sy * ty + sz * tz;
+      sx -= tx * d; sy -= ty * d; sz -= tz * d;
+      var sl = Math.sqrt(sx * sx + sy * sy + sz * sz);
+      if (sl < 0.0001) { sx = 1; sy = 0; sz = 0; sl = 1; }
+      sx /= sl; sy /= sl; sz /= sl;
+      var fx = ty * sz - tz * sy, fy = tz * sx - tx * sz, fz = tx * sy - ty * sx;
+      if (i > 0) {
+        var q = pts[i - 1];
+        var ddx = (p.x || 0) - (q.x || 0), ddy = (p.y || 0) - (q.y || 0), ddz = (p.z || 0) - (q.z || 0);
+        run += Math.sqrt(ddx * ddx + ddy * ddy + ddz * ddz);
+      }
+      var w = p.w === undefined ? 0.2 : p.w;
+      var v = run * vScale;
+      var ax = (p.x || 0) - sx * w, ay = (p.y || 0) - sy * w, az = (p.z || 0) - sz * w;
+      var bx = (p.x || 0) + sx * w, by = (p.y || 0) + sy * w, bz = (p.z || 0) + sz * w;
+      /* a slight lift at the centre gives the strip a curl rather than a plane */
+      var curl = (opts.curl || 0) * w;
+      front.push([
+        this.vert(ax, ay, az, fx, fy, fz, 0, v),
+        this.vert((p.x || 0) + fx * curl, (p.y || 0) + fy * curl, (p.z || 0) + fz * curl, fx, fy, fz, 0.5 * uScale, v),
+        this.vert(bx, by, bz, fx, fy, fz, uScale, v)
+      ]);
+      back.push([
+        this.vert(ax, ay, az, -fx, -fy, -fz, 0, v),
+        this.vert((p.x || 0) + fx * curl, (p.y || 0) + fy * curl, (p.z || 0) + fz * curl, -fx, -fy, -fz, 0.5 * uScale, v),
+        this.vert(bx, by, bz, -fx, -fy, -fz, uScale, v)
+      ]);
+    }
+    for (var j = 0; j < n - 1; j++) {
+      for (var k = 0; k < 2; k++) {
+        this.i.push(front[j][k], front[j][k + 1], front[j + 1][k + 1]);
+        this.i.push(front[j][k], front[j + 1][k + 1], front[j + 1][k]);
+        this.i.push(back[j][k], back[j + 1][k + 1], back[j][k + 1]);
+        this.i.push(back[j][k], back[j + 1][k], back[j + 1][k + 1]);
+      }
+    }
+    return this;
+  };
+
   MeshBuilder.prototype.cross = function (cx, cy, cz, w, h, planes) {
     planes = planes || 2;
     for (var p = 0; p < planes; p++) {

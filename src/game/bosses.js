@@ -113,55 +113,164 @@ var LZ = LZ || {};
   /* 1. The Emberhusk -- Ashvale Mine                                  */
   /* ---------------------------------------------------------------- */
   function emberhuskRig() {
+    /* A slag golem. Nothing on it is a box: every mass is a swept ring set,
+       roughened by per-ring radius jitter so the silhouette reads as piled
+       stone. The waist is deliberately pinched and the arms hung wide of it,
+       so the limbs stay readable as limbs from any angle instead of melting
+       into one lump -- the failure mode of every low-poly golem. */
+    var CHEST = [
+      { y: -0.10, r: 0.62 }, { y: 0.22, r: 0.86 }, { y: 0.58, r: 1.02 },
+      { y: 0.94, r: 1.04 }, { y: 1.20, r: 0.78 }
+    ];
+    /* radius of the chest barrel at a given height, so surface details can be
+       placed ON the crust rather than sunk inside it */
+    function chestR(y) {
+      if (y <= CHEST[0].y) return CHEST[0].r;
+      for (var i = 1; i < CHEST.length; i++) {
+        if (y <= CHEST[i].y) {
+          var t = (y - CHEST[i - 1].y) / (CHEST[i].y - CHEST[i - 1].y);
+          return M.lerp(CHEST[i - 1].r, CHEST[i].r, t);
+        }
+      }
+      return CHEST[CHEST.length - 1].r;
+    }
+    function rough(rings, amp, seed) {
+      for (var i = 0; i < rings.length; i++) {
+        var w = M.hash2(i * 3.7 + seed, seed) * 2 - 1;
+        rings[i].r *= 1 + w * amp;
+      }
+      return rings;
+    }
+    function fist(mb, x, y, r) {
+      mb.ovoid(x, y, 0, r, r * 0.92, r * 1.02, 8, 6);
+      for (var i = 0; i < 4; i++) {
+        var a = -0.55 + i * 0.37;
+        mb.ovoid(x + Math.sin(a) * r * 0.58, y + r * 0.34, Math.cos(a) * r * 0.64,
+          r * 0.30, r * 0.26, r * 0.30, 6, 4);
+      }
+    }
+    /* a molten fissure crawling down the crust from (angle, y) */
+    function seam(mb, a0, y0, y1, drift, steps, rad) {
+      var pts = [];
+      for (var i = 0; i <= steps; i++) {
+        var t = i / steps;
+        var y = M.lerp(y0, y1, t);
+        var a = a0 + drift * Math.sin(t * 3.1);
+        var rr = chestR(y) * 0.97;
+        pts.push([Math.sin(a) * rr, y, Math.cos(a) * rr]);
+      }
+      for (var k = 0; k < pts.length - 1; k++) {
+        var w = rad * (k === 0 || k === pts.length - 2 ? 0.55 : 1);
+        mb.tube([
+          { x: pts[k][0], y: pts[k][1], z: pts[k][2], r: w },
+          { x: pts[k + 1][0], y: pts[k + 1][1], z: pts[k + 1][2], r: rad }
+        ], 5);
+      }
+    }
     return {
       height: 3.4, radius: 1.4,
       def: [
         { name: 'root' },
-        { name: 'hips', parent: 'root', offset: [0, 1.5, 0], mat: 'rockAsh', build: function (mb) {
-            mb.setColorHex(0x8a7c70);
-            mb.taper(0, -0.5, 0, 1.5, 1.1, 1.7, 1.2, 1.0, 0, 0, 0.9);
+        { name: 'hips', parent: 'root', offset: [0, 1.45, 0], mat: 'rockAsh', build: function (mb) {
+            mb.setColorHex(0xe4d8cc);
+            mb.tube(rough([
+              { y: -0.80, r: 0.62 }, { y: -0.52, r: 0.80 }, { y: -0.24, r: 0.88 },
+              { y: 0.04, r: 0.80 }, { y: 0.26, r: 0.66 }
+            ], 0.07, 11), 9, { v: 0.7 });
           } },
-        { name: 'chest', parent: 'hips', offset: [0, 0.55, 0], mat: 'rockAsh', build: function (mb) {
-            mb.setColorHex(0x9a8a7a);
-            mb.taper(0, 0, 0, 1.7, 1.2, 1.9, 1.3, 1.1, 0, 0, 0.9);
+        { name: 'chest', parent: 'hips', offset: [0, 0.30, 0], mat: 'rockAsh', build: function (mb) {
+            mb.setColorHex(0xf4e8d8);
+            mb.tube(rough(CHEST.map(function (g) { return { y: g.y, r: g.r }; }), 0.06, 27),
+              9, { v: 0.7 });
+            /* boulder shoulders -- the golem's whole read is these two lumps */
+            mb.setColorHex(0xd0c4b4);
+            mb.ovoid(-1.18, 0.98, 0, 0.66, 0.58, 0.62, 8, 6);
+            mb.ovoid(1.18, 0.98, 0, 0.66, 0.58, 0.62, 8, 6);
+            mb.ovoid(-1.32, 1.32, -0.12, 0.36, 0.32, 0.34, 6, 4);
+            mb.ovoid(1.26, 1.36, 0.08, 0.32, 0.30, 0.32, 6, 4);
           } },
-        { name: 'core', parent: 'chest', offset: [0, 0.5, 0.62], mat: 'lava', build: function (mb) {
+        { name: 'cracks', parent: 'chest', offset: [0, 0, 0], mat: 'lava', build: function (mb) {
             mb.setColorHex(0xffffff);
-            mb.sphere(0, 0, 0, 0.42, 8, 5, 1);
+            seam(mb, -0.30, 0.86, 0.00, 0.42, 4, 0.055);
+            seam(mb, 0.34, 0.80, 0.14, -0.36, 4, 0.048);
+            seam(mb, Math.PI + 0.2, 0.94, 0.18, 0.40, 4, 0.050);
+            seam(mb, 1.55, 0.70, 0.20, 0.30, 3, 0.042);
           } },
-        { name: 'plate', parent: 'chest', offset: [0, 0.5, 0.66], mat: 'rockAsh', build: function (mb) {
-            mb.setColorHex(0x6a5c50);
-            mb.taper(-0.02, -0.55, 0, 1.1, 0.3, 1.0, 0.28, 1.1, 0, 0, 1.2);
+        { name: 'core', parent: 'chest', offset: [0, 0.72, 0.92], mat: 'lava', build: function (mb) {
+            mb.setColorHex(0xffffff);
+            mb.ovoid(0, 0, 0, 0.38, 0.38, 0.30, 10, 7);
           } },
-        { name: 'head', parent: 'chest', offset: [0, 1.15, 0], mat: 'rockAsh', build: function (mb) {
-            mb.setColorHex(0xa89684);
-            mb.taper(0, 0, 0, 1.0, 0.9, 0.8, 0.7, 0.72, 0, 0, 1.1);
-            mb.setColorHex(0xffb040);
-            mb.box(-0.26, 0.42, 0.44, 0.24, 0.16, 0.10, 2);
-            mb.box(0.26, 0.42, 0.44, 0.24, 0.16, 0.10, 2);
+        { name: 'plate', parent: 'chest', offset: [0, 0.72, 0.62], mat: 'rockAsh', build: function (mb) {
+            /* a curved slab of crust half-shuttering the core, swept along z so
+               it wraps the chest instead of sitting flat against it */
+            mb.setColorHex(0xb4a898);
+            mb.tube([
+              { z: -0.28, y: -0.34, rx: 0.74, ry: 0.56 },
+              { z: 0.02, y: -0.34, rx: 0.82, ry: 0.62 },
+              { z: 0.28, y: -0.32, rx: 0.70, ry: 0.54 },
+              { z: 0.44, y: -0.30, rx: 0.44, ry: 0.34 }
+            ], 8, { axis: 'z', capStart: false });
           } },
-        { name: 'armL', parent: 'chest', offset: [-1.0, 0.85, 0], mat: 'rockAsh', build: function (mb) {
-            mb.setColorHex(0x8a7c70);
-            mb.taper(0, -1.2, 0, 0.6, 0.6, 0.78, 0.78, 1.2, 0, 0, 1.0);
-            mb.setColorHex(0x6a5c50);
-            mb.sphere(0, -1.4, 0, 0.62, 6, 4, 0.9);
+        { name: 'head', parent: 'chest', offset: [0, 1.34, 0.06], mat: 'rockAsh', build: function (mb) {
+            mb.setColorHex(0xffeedd);
+            mb.tube(rough([
+              { y: -0.24, r: 0.44 }, { y: 0.02, r: 0.60 }, { y: 0.32, r: 0.62 },
+              { y: 0.58, r: 0.50 }, { y: 0.74, r: 0.28 }
+            ], 0.05, 5), 8, { v: 0.8 });
+            /* heavy brow ridge thrown forward, so the sockets sit in shadow */
+            mb.setColorHex(0xc0ae9a);
+            mb.tube([
+              { x: -0.52, y: 0.30, z: 0.30, ry: 0.11, rz: 0.10 },
+              { x: -0.20, y: 0.36, z: 0.52, ry: 0.17, rz: 0.15 },
+              { x: 0.20, y: 0.36, z: 0.52, ry: 0.17, rz: 0.15 },
+              { x: 0.52, y: 0.30, z: 0.30, ry: 0.11, rz: 0.10 }
+            ], 6, { axis: 'x' });
+            /* jaw shelf */
+            mb.setColorHex(0xb0a08e);
+            mb.tube([
+              { x: -0.40, y: -0.10, z: 0.24, ry: 0.11, rz: 0.13 },
+              { x: 0, y: -0.16, z: 0.42, ry: 0.16, rz: 0.18 },
+              { x: 0.40, y: -0.10, z: 0.24, ry: 0.11, rz: 0.13 }
+            ], 6, { axis: 'x' });
           } },
-        { name: 'armR', parent: 'chest', offset: [1.0, 0.85, 0], mat: 'rockAsh', build: function (mb) {
-            mb.setColorHex(0x8a7c70);
-            mb.taper(0, -1.2, 0, 0.6, 0.6, 0.78, 0.78, 1.2, 0, 0, 1.0);
-            mb.setColorHex(0x6a5c50);
-            mb.sphere(0, -1.4, 0, 0.62, 6, 4, 0.9);
+        { name: 'eyes', parent: 'head', offset: [0, 0.19, 0], mat: 'lava', build: function (mb) {
+            mb.setColorHex(0xffffff);
+            mb.ovoid(-0.24, 0, 0.50, 0.13, 0.09, 0.10, 6, 4);
+            mb.ovoid(0.24, 0, 0.50, 0.13, 0.09, 0.10, 6, 4);
           } },
-        { name: 'legL', parent: 'hips', offset: [-0.62, -0.6, 0], mat: 'rockAsh', build: function (mb) {
-            mb.setColorHex(0x7a6c60);
-            mb.taper(0, -0.9, 0, 0.6, 0.6, 0.72, 0.72, 0.9, 0, 0, 1.0);
-          } },
-        { name: 'legR', parent: 'hips', offset: [0.62, -0.6, 0], mat: 'rockAsh', build: function (mb) {
-            mb.setColorHex(0x7a6c60);
-            mb.taper(0, -0.9, 0, 0.6, 0.6, 0.72, 0.72, 0.9, 0, 0, 1.0);
-          } }
+        { name: 'armL', parent: 'chest', offset: [-1.34, 0.92, 0], mat: 'rockAsh', build: armBuild(41, -1) },
+        { name: 'armR', parent: 'chest', offset: [1.34, 0.92, 0], mat: 'rockAsh', build: armBuild(63, 1) },
+        { name: 'legL', parent: 'hips', offset: [-0.52, -0.56, 0], mat: 'rockAsh', build: legBuild(97) },
+        { name: 'legR', parent: 'hips', offset: [0.52, -0.56, 0], mat: 'rockAsh', build: legBuild(131) }
       ]
     };
+    function armBuild(seed, side) {
+      return function (mb) {
+        mb.setColorHex(0xe4d8cc);
+        mb.tube(rough([
+          { y: 0.10, x: 0, r: 0.42 }, { y: -0.30, x: side * 0.12, r: 0.35 },
+          { y: -0.72, x: side * 0.20, r: 0.31 }, { y: -1.08, x: side * 0.26, r: 0.36 }
+        ], 0.06, seed), 8, { v: 0.7 });
+        mb.setColorHex(0xbfb2a2);
+        fist(mb, side * 0.28, -1.52, 0.52);
+      };
+    }
+    function legBuild(seed) {
+      return function (mb) {
+        mb.setColorHex(0xd8ccc0);
+        mb.tube(rough([
+          { y: 0.10, r: 0.42 }, { y: -0.16, r: 0.38 }, { y: -0.44, r: 0.34 },
+          { y: -0.70, r: 0.38 }
+        ], 0.06, seed), 8, { v: 0.7 });
+        /* splayed slab foot */
+        mb.setColorHex(0xbfb2a2);
+        mb.tube([
+          { z: -0.30, y: -0.78, rx: 0.32, ry: 0.15 },
+          { z: 0.06, y: -0.80, rx: 0.42, ry: 0.18 },
+          { z: 0.38, y: -0.80, rx: 0.36, ry: 0.15 }
+        ], 8, { axis: 'z' });
+      };
+    }
   }
   var EMBER_CLIPS = {
     idle: clip('idle', 3.0, true, {
@@ -352,23 +461,29 @@ var LZ = LZ || {};
   /* Genmo -- shared rig                                               */
   /* ---------------------------------------------------------------- */
   function genmoRig(power) {
+    /* Boss 2 is a teenager who has just found the power and has no idea what
+       it is: ordinary build, ordinary clothes, one bad haircut. Boss 6 is the
+       same person grown into it -- taller, armoured at the shoulder, and lit
+       from inside. Keeping one rig for both makes the resemblance land. */
+    var final = power >= 2;
     return LZ.Models.humanoid({
-      build: power >= 2 ? 'lanky' : 'teen',
-      scale: power >= 2 ? 1.22 : 1.02,
-      skin: power >= 2 ? 0x8a6a5a : 0xc09878,
-      cloth: power >= 2 ? 0x2a1030 : 0x3a2a40,
-      clothDark: 0x180a20,
-      trim: power >= 2 ? 0xd8a030 : 0x8a7a50,
-      pants: 0x201828, boots: 0x181018,
-      hair: power >= 2 ? 0xd04020 : 0x8a2a1a,
-      hairStyle: power >= 2 ? 'long' : 'ponytail',
+      build: final ? 'lanky' : 'teen',
+      scale: final ? 1.42 : 1.02,
+      skin: final ? 0xa4826a : 0xc09878,
+      cloth: final ? 0x5c2c74 : 0x3a2a40,
+      clothDark: final ? 0x2c1038 : 0x180a20,
+      trim: final ? 0xf0c250 : 0x8a7a50,
+      pants: final ? 0x2c2038 : 0x201828, boots: 0x181018,
+      hair: final ? 0xf05a28 : 0x8a2a1a,
+      hairStyle: final ? 'long' : 'ponytail',
       hat: 'none',
-      clothTex: power >= 2 ? 'evil' : 'clothPurple',
+      clothTex: final ? 'evil' : 'clothPurple',
       skinTex: 'skinTan',
       hairTex: 'hairRed',
-      glove: 0x201828, gloveTex: 'leatherDark',
-      cape: true, capeColor: power >= 2 ? 0x40103a : 0x2a1830,
-      eyeColor: 0xffb020, sash: power >= 2, sashColor: 0xd8a030
+      glove: 0x2c2038, gloveTex: 'leatherDark',
+      cape: true, capeColor: final ? 0x6a1c58 : 0x2a1830,
+      pauldron: final ? 0x3c1450 : 0,
+      eyeColor: 0xffb020, sash: final, sashColor: 0xf0c250
     });
   }
 
@@ -484,46 +599,140 @@ var LZ = LZ || {};
       def: [
         { name: 'root' },
         { name: 'base', parent: 'root', offset: [0, 0, 0], mat: 'barkDead', build: function (mb) {
-            mb.setColorHex(0x6a5a3a);
-            mb.cylinder(0, 0, 0, 1.5, 1.0, 0.9, 9, true, 0.9);
-          } },
-        { name: 'stalk', parent: 'base', offset: [0, 0.85, 0], mat: 'leavesDark', build: function (mb) {
-            mb.setColorHex(0x4a6a34);
-            mb.taper(0, 0, 0, 0.9, 0.9, 0.6, 0.6, 1.4, 0, 0, 1.0);
-          } },
-        { name: 'bulb', parent: 'stalk', offset: [0, 1.4, 0], mat: 'leaves', build: function (mb) {
-            mb.setColorHex(0x88b048);
-            mb.sphere(0, 0.3, 0, 0.85, 8, 5, 1.1);
-          } },
-        { name: 'jaw', parent: 'bulb', offset: [0, 0.25, 0.2], mat: 'jellyRed', build: function (mb) {
-            mb.setColorHex(0xb03040);
-            mb.cylinder(0, 0, 0, 0.7, 0.2, 0.5, 8, true, 1.2);
-            mb.setColorHex(0xf0e8d0);
-            for (var i = 0; i < 8; i++) {
-              var a = i / 8 * M.TAU;
-              mb.taper(Math.sin(a) * 0.55, 0.4, Math.cos(a) * 0.55, 0.12, 0.12, 0.02, 0.02, 0.26, 0, 0, 2);
+            /* a knuckled root ball, not a drum: it flares at the ground and
+               pinches where the stalk leaves it */
+            mb.setColorHex(0xd8c8ac);
+            mb.tube([
+              { y: 0.02, r: 1.55 }, { y: 0.28, r: 1.40 }, { y: 0.56, r: 1.08 },
+              { y: 0.78, r: 0.80 }, { y: 0.94, r: 0.70 }
+            ], 10, { v: 0.6, capStart: false });
+            /* roots crawling out over the floor, each with a knuckle */
+            for (var i = 0; i < 7; i++) {
+              var a = i / 7 * M.TAU + 0.4;
+              var sa = Math.sin(a), ca = Math.cos(a);
+              var w = 0.86 + M.hash1(i, 7) * 0.5;
+              mb.setColorHex(i & 1 ? 0xd0bfa2 : 0xc2b096);
+              mb.tube([
+                { x: sa * 0.85, y: 0.42, z: ca * 0.85, r: 0.26 },
+                { x: sa * 1.30, y: 0.30, z: ca * 1.30, r: 0.21 },
+                { x: sa * 1.70 * w, y: 0.16, z: ca * 1.70 * w, r: 0.24 },
+                { x: sa * 2.15 * w, y: 0.07, z: ca * 2.15 * w, r: 0.13 },
+                { x: sa * 2.50 * w, y: 0.02, z: ca * 2.50 * w, r: 0.03 }
+              ], 6);
             }
           } },
-        { name: 'petal', parent: 'bulb', offset: [0, 0.1, 0], mat: 'flowersRed', build: function (mb) {
-            mb.setColorHex(0xd05060);
-            for (var i = 0; i < 6; i++) {
-              var a = i / 6 * M.TAU;
-              mb.quad(
-                [Math.sin(a) * 0.7, 0.1, Math.cos(a) * 0.7],
-                [Math.sin(a + 0.5) * 0.8, 0.0, Math.cos(a + 0.5) * 0.8],
-                [Math.sin(a + 0.25) * 1.7, 0.5, Math.cos(a + 0.25) * 1.7],
-                [Math.sin(a - 0.1) * 0.9, 0.2, Math.cos(a - 0.1) * 0.9], 1);
+        { name: 'stalk', parent: 'base', offset: [0, 0.90, 0], mat: 'leavesDark', build: function (mb) {
+            /* the neck rears back then throws forward, so the head hangs out
+               over the arena instead of sitting on a pole */
+            mb.setColorHex(0xb4e08e);
+            mb.tube([
+              { y: 0.00, z: 0.00, r: 0.52 }, { y: 0.42, z: -0.18, r: 0.45 },
+              { y: 0.86, z: -0.26, r: 0.41 }, { y: 1.28, z: -0.14, r: 0.38 },
+              { y: 1.62, z: 0.16, r: 0.36 }, { y: 1.86, z: 0.52, r: 0.34 }
+            ], 8, { v: 0.8 });
+            /* a collar of drooping leaves where the neck leaves the root ball */
+            mb.setColorHex(0xa4d080);
+            for (var i = 0; i < 5; i++) {
+              var a = i / 5 * M.TAU + 0.3;
+              var sa = Math.sin(a), ca = Math.cos(a);
+              mb.ribbon([
+                { x: sa * 0.34, y: 0.14, z: ca * 0.34, w: 0.14 },
+                { x: sa * 0.82, y: 0.10, z: ca * 0.82, w: 0.30 },
+                { x: sa * 1.32, y: -0.10, z: ca * 1.32, w: 0.28 },
+                { x: sa * 1.72, y: -0.44, z: ca * 1.72, w: 0.16 },
+                { x: sa * 1.90, y: -0.72, z: ca * 1.90, w: 0.02 }
+              ], [ca, 0, -sa], { curl: -0.4, v: 0.6 });
             }
           } },
-        { name: 'vineL', parent: 'base', offset: [-1.2, 0.6, 0], mat: 'leavesDark', build: vineBuild },
-        { name: 'vineR', parent: 'base', offset: [1.2, 0.6, 0], mat: 'leavesDark', build: vineBuild }
+        { name: 'petal', parent: 'stalk', offset: [0, 1.86, 0.42], mat: 'petalRed', build: function (mb) {
+            /* the corolla radiates in the plane of the face, not around the
+               neck, so the head reads as a flower staring straight at you */
+            mb.setColorHex(0xffffff);
+            for (var i = 0; i < 9; i++) {
+              var a = i / 9 * M.TAU + 0.18;
+              var sa = Math.sin(a), ca = Math.cos(a);
+              mb.ribbon([
+                { x: sa * 0.50, y: ca * 0.50, z: -0.10, w: 0.16 },
+                { x: sa * 1.00, y: ca * 1.00, z: 0.10, w: 0.32 },
+                { x: sa * 1.52, y: ca * 1.52, z: 0.22, w: 0.36 },
+                { x: sa * 2.00, y: ca * 2.00, z: 0.18, w: 0.27 },
+                { x: sa * 2.36, y: ca * 2.36, z: 0.02, w: 0.14 },
+                { x: sa * 2.54, y: ca * 2.54, z: -0.14, w: 0.02 }
+              ], [ca, -sa, 0], { curl: -0.5, v: 0.55 });
+            }
+          } },
+        { name: 'bulb', parent: 'stalk', offset: [0, 1.86, 0.42], mat: 'leaves', build: function (mb) {
+            /* the calyx: a cup opening forward along +z, so the throat inside
+               it faces the player and the eye at the back of it is an honest,
+               readable weak point */
+            mb.setColorHex(0xd6f0a4);
+            mb.tube([
+              { z: -0.62, r: 0.20 }, { z: -0.42, r: 0.56 }, { z: -0.16, r: 0.82 },
+              { z: 0.12, r: 0.96 }, { z: 0.34, r: 1.00 }
+            ], 11, { axis: 'z', v: 0.8, capEnd: false });
+          } },
+        { name: 'throat', parent: 'bulb', offset: [0, 0, 0], mat: 'jellyRed', build: function (mb) {
+            mb.setColorHex(0xf88c96);
+            mb.tube([
+              { z: -0.56, r: 0.08 }, { z: -0.34, r: 0.40 },
+              { z: -0.06, r: 0.64 }, { z: 0.22, r: 0.78 }
+            ], 11, { axis: 'z', v: 0.8, capEnd: false });
+          } },
+        { name: 'eye', parent: 'bulb', offset: [0, 0, -0.10], mat: 'glowGreen', build: function (mb) {
+            mb.setColorHex(0xffffff);
+            mb.ovoid(0, 0, 0, 0.42, 0.42, 0.34, 10, 7);
+            mb.setColorHex(0x203808);
+            mb.ovoid(0, 0, 0.26, 0.19, 0.19, 0.12, 8, 5);
+          } },
+        { name: 'jaw', parent: 'bulb', offset: [0, 0.96, -0.16], mat: 'leavesDark', build: function (mb) {
+            /* the upper lid, hinged above the mouth: a negative x rotation
+               throws it back and opens the maw */
+            mb.setColorHex(0xb8dc8c);
+            mb.tube([
+              { y: 0.06, z: -0.10, rx: 0.30, rz: 0.12 },
+              { y: -0.10, z: 0.14, rx: 0.72, rz: 0.26 },
+              { y: -0.34, z: 0.30, rx: 0.94, rz: 0.30 },
+              { y: -0.62, z: 0.30, rx: 0.92, rz: 0.26 },
+              { y: -0.84, z: 0.20, rx: 0.66, rz: 0.16 }
+            ], 9, { v: 0.8, capStart: false, capEnd: false });
+            /* fangs along the lid's rim */
+            mb.setColorHex(0xf4ecd4);
+            for (var i = 0; i < 7; i++) {
+              var a = -1.05 + i * 0.35;
+              var fx = Math.sin(a) * 0.90, fy = -0.36 - Math.cos(a) * 0.52;
+              mb.tube([
+                { x: fx, y: fy, z: 0.26, r: 0.10 },
+                { x: fx * 0.94, y: fy - 0.06, z: 0.48, r: 0.06 },
+                { x: fx * 0.88, y: fy - 0.10, z: 0.64, r: 0.01 }
+              ], 5, { axis: 'z' });
+            }
+          } },
+        { name: 'vineL', parent: 'base', offset: [-1.15, 0.55, 0], mat: 'leavesDark', build: vineBuild(-1) },
+        { name: 'vineR', parent: 'base', offset: [1.15, 0.55, 0], mat: 'leavesDark', build: vineBuild(1) }
       ]
     };
-    function vineBuild(mb) {
-      mb.setColorHex(0x3e6030);
-      mb.taper(0, 0, 0, 0.3, 0.3, 0.16, 0.16, 1.8, 0, 0, 1.0);
-      mb.setColorHex(0x8a6a2a);
-      mb.taper(0, 1.8, 0, 0.18, 0.18, 0.02, 0.02, 0.4, 0, 0.1, 2);
+    function vineBuild(side) {
+      return function (mb) {
+        mb.setColorHex(0xa8d488);
+        mb.tube([
+          { y: 0.00, x: 0, r: 0.24 }, { y: 0.46, x: side * 0.12, r: 0.20 },
+          { y: 0.92, x: side * 0.18, r: 0.17 }, { y: 1.36, x: side * 0.10, r: 0.14 },
+          { y: 1.80, x: side * -0.06, r: 0.11 },
+          { y: 2.10, x: side * -0.16, r: 0.07 }, { y: 2.30, x: side * -0.24, r: 0.01 }
+        ], 7, { v: 0.9 });
+        /* thorns spiralling up the whip */
+        mb.setColorHex(0xd8c48a);
+        for (var i = 0; i < 6; i++) {
+          var t = 0.24 + i * 0.32;
+          var a = i * 2.1;
+          var sa = Math.sin(a), ca = Math.cos(a);
+          var r = 0.20 - i * 0.02;
+          mb.tube([
+            { x: side * 0.14 * (t / 1.8) + sa * r * 0.5, y: t, z: ca * r * 0.5, r: 0.075 },
+            { x: side * 0.14 * (t / 1.8) + sa * r * 1.7, y: t + 0.10, z: ca * r * 1.7, r: 0.01 }
+          ], 5);
+        }
+      };
     }
   }
   var THORN_CLIPS = {
@@ -664,51 +873,124 @@ var LZ = LZ || {};
   /* 4. Tidewrought -- Lake Nial                                       */
   /* ---------------------------------------------------------------- */
   function serpentRig() {
+    /* The body is a chain of overlapping barrels rather than one aligned tube.
+       Segment bones swing on y for the swim wave, so their geometry cannot
+       assume a fixed heading -- overlapping ovoids read as a rope of muscle
+       from every angle, which is exactly how N64 serpents were built. The
+       chain offsets trace an S: head reared high, body arcing down and back. */
+    var CHAIN = [
+      [0, 1.55, 0.90], [0, -0.05, -0.95], [0, -0.25, -0.95],
+      [0, -0.40, -0.90], [0, -0.30, -0.90], [0, -0.05, -0.95], [0, 0.25, -0.95]
+    ];
     var def = [{ name: 'root' }];
     var prev = 'root';
-    for (var i = 0; i < 5; i++) {
+    for (var i = 0; i < CHAIN.length; i++) {
       (function (i, prev) {
         def.push({
-          name: 'seg' + i, parent: prev, offset: [0, i === 0 ? 0.6 : 0, i === 0 ? 0 : -0.85],
-          mat: 'scaleBlue',
+          name: 'seg' + i, parent: prev, offset: CHAIN[i], mat: 'scaleBlue',
           build: function (mb) {
+            var r = 0.70 - i * 0.072;
             mb.setColorHex(0xffffff);
-            var r = 0.62 - i * 0.07;
-            mb.cylinder(0, -r, -0.42, r, r * 0.92, r * 2, 8, true, 1.0);
+            mb.ovoid(0, 0, 0, r * 1.05, r, r * 1.18, 9, 7);
+            /* a second, smaller bead bridging toward the next segment, so the
+               chain never shows a gap when the wave bends it */
+            if (i < CHAIN.length - 1) mb.ovoid(0, -0.14, -0.44, r * 0.88, r * 0.82, r * 0.94, 8, 6);
+            /* dorsal ridge */
             mb.setColorHex(0x8ad0e8);
-            mb.taper(0, r * 0.7, -0.42, 0.18, 0.5, 0.03, 0.3, 0.44, 0, 0, 1.2);
+            mb.ribbon([
+              { x: 0, y: r * 0.82, z: r * 0.90, w: 0.02 },
+              { x: 0, y: r * 1.18, z: r * 0.25, w: 0.02 },
+              { x: 0, y: r * 1.34, z: -r * 0.35, w: 0.02 },
+              { x: 0, y: r * 1.00, z: -r * 1.00, w: 0.02 }
+            ], [0, 0, 1], { v: 0.7 });
+            /* paddle fins on the first two coils */
+            if (i < 3) {
+              mb.setColorHex(0x8ad0e8);
+              for (var sd = -1; sd <= 1; sd += 2) {
+                mb.ribbon([
+                  { x: sd * r * 0.80, y: -0.10, z: 0.05, w: 0.20 },
+                  { x: sd * (r + 0.34), y: -0.30, z: -0.10, w: 0.26 },
+                  { x: sd * (r + 0.62), y: -0.52, z: -0.28, w: 0.18 },
+                  { x: sd * (r + 0.78), y: -0.68, z: -0.42, w: 0.02 }
+                ], [0, 0, 1], { curl: 0.3, v: 0.7 });
+              }
+            }
           }
         });
       })(i, prev);
       prev = 'seg' + i;
     }
     def.push({
-      name: 'head', parent: 'seg0', offset: [0, 0, 0.9], mat: 'scaleBlue',
+      name: 'head', parent: 'seg0', offset: [0, 0.34, 0.92], mat: 'scaleBlue',
       build: function (mb) {
+        /* skull swept along +z: wide at the cheeks, pinching to a blunt snout,
+           and dipping as it goes so the face angles down at the player */
         mb.setColorHex(0xffffff);
-        mb.taper(0, -0.4, 0, 0.7, 0.9, 0.5, 0.7, 0.8, 0, 0.16, 1.1);
+        mb.tube([
+          { z: -0.52, y: 0.06, rx: 0.66, ry: 0.60 },
+          { z: -0.06, y: 0.06, rx: 0.80, ry: 0.70 },
+          { z: 0.40, y: -0.06, rx: 0.64, ry: 0.55 },
+          { z: 0.82, y: -0.22, rx: 0.42, ry: 0.35 },
+          { z: 1.06, y: -0.36, rx: 0.20, ry: 0.17 }
+        ], 9, { axis: 'z', v: 0.8 });
+        /* lower jaw slung under the snout */
         mb.setColorHex(0xf0f4ff);
-        mb.taper(0, -0.2, 0.4, 0.42, 0.5, 0.24, 0.3, 0.36, 0, 0.24, 1.4);
-        mb.setColorHex(0xffe060);
-        mb.box(-0.22, 0.16, 0.34, 0.16, 0.14, 0.08, 2);
-        mb.box(0.22, 0.16, 0.34, 0.16, 0.14, 0.08, 2);
-        mb.setColorHex(0x1a2030);
-        mb.box(-0.22, 0.16, 0.40, 0.07, 0.10, 0.05, 2);
-        mb.box(0.22, 0.16, 0.40, 0.07, 0.10, 0.05, 2);
+        mb.tube([
+          { z: -0.18, y: -0.42, rx: 0.46, ry: 0.19 },
+          { z: 0.36, y: -0.48, rx: 0.38, ry: 0.16 },
+          { z: 0.88, y: -0.56, rx: 0.19, ry: 0.09 }
+        ], 7, { axis: 'z' });
+        mb.setColorHex(0xf4f8ff);
+        for (var i = 0; i < 6; i++) {
+          var t = i / 5;
+          var sd = i < 3 ? -1 : 1;
+          var zz = -0.02 + (i % 3) * 0.28;
+          mb.tube([
+            { x: sd * 0.40, y: -0.28, z: zz * 1.3, r: 0.07 },
+            { x: sd * 0.36, y: -0.06, z: zz * 1.3, r: 0.02 }
+          ], 4);
+        }
+        /* brow horns sweeping back over the eyes */
+        mb.setColorHex(0x74a4c0);
+        for (var sd2 = -1; sd2 <= 1; sd2 += 2) {
+          mb.tube([
+            { x: sd2 * 0.42, y: 0.50, z: -0.14, r: 0.14 },
+            { x: sd2 * 0.62, y: 0.74, z: -0.46, r: 0.09 },
+            { x: sd2 * 0.76, y: 0.84, z: -0.82, r: 0.01 }
+          ], 5);
+        }
       }
     });
     def.push({
-      name: 'crest', parent: 'head', offset: [0, 0.32, -0.1], mat: 'gemBlue',
+      name: 'eyes', parent: 'head', offset: [0, 0.20, 0.16], mat: 'glowBlue',
       build: function (mb) {
-        mb.setColorHex(0x90e0ff);
-        mb.taper(0, 0, 0, 0.14, 0.6, 0.02, 0.36, 0.7, 0, -0.2, 1.4);
+        mb.setColorHex(0xffffff);
+        mb.ovoid(-0.52, 0, 0.10, 0.20, 0.19, 0.17, 8, 6);
+        mb.ovoid(0.52, 0, 0.10, 0.20, 0.19, 0.17, 8, 6);
+        mb.setColorHex(0x101c2c);
+        mb.ovoid(-0.60, 0, 0.20, 0.08, 0.13, 0.07, 6, 4);
+        mb.ovoid(0.60, 0, 0.20, 0.08, 0.13, 0.07, 6, 4);
       }
     });
-    return { height: 2.4, radius: 1.0, def: def };
+    def.push({
+      name: 'crest', parent: 'head', offset: [0, 0.48, -0.24], mat: 'gemBlue',
+      build: function (mb) {
+        /* a swept-back membrane crest */
+        mb.setColorHex(0x90e0ff);
+        mb.ribbon([
+          { x: 0, y: 0.00, z: 0.10, w: 0.16 },
+          { x: 0, y: 0.32, z: -0.14, w: 0.30 },
+          { x: 0, y: 0.58, z: -0.44, w: 0.26 },
+          { x: 0, y: 0.70, z: -0.74, w: 0.12 },
+          { x: 0, y: 0.72, z: -0.92, w: 0.01 }
+        ], [1, 0, 0], { v: 0.7 });
+      }
+    });
+    return { height: 2.6, radius: 1.0, def: def };
   }
   var SERP_CLIPS = (function () {
     var tracks = {};
-    for (var i = 0; i < 5; i++) {
+    for (var i = 0; i < 7; i++) {
       var ph = i * 0.22;
       tracks['seg' + i] = { r: [[0, 0, Math.sin(ph) * 16, 0], [0.9, 0, Math.sin(ph + 1.6) * 16, 0], [1.8, 0, Math.sin(ph) * 16, 0]] };
     }
@@ -835,38 +1117,81 @@ var LZ = LZ || {};
   /* 5. The Hollow King -- Sunken Hollow                               */
   /* ---------------------------------------------------------------- */
   function hollowRig() {
+    /* A king with no legs. The silhouette has to do all the work, so the robe
+       is a tall bell that pinches into a hood, and every surface detail sits
+       at the radius the bell actually has at that height -- the classic way to
+       lose a face on a rounded body is to place it at a flat z offset and let
+       the body swallow it. */
+    var ROBE = [
+      { y: -1.95, r: 0.03 }, { y: -1.55, r: 0.26 }, { y: -1.15, r: 0.56 },
+      { y: -0.75, r: 0.84 }, { y: -0.38, r: 0.98 }, { y: 0.00, r: 0.88 },
+      { y: 0.30, r: 0.74 }, { y: 0.58, r: 0.42 }, { y: 0.88, r: 0.60 },
+      { y: 1.14, r: 0.56 }, { y: 1.38, r: 0.32 }, { y: 1.52, r: 0.08 }
+    ];
     return {
       height: 2.6, radius: 0.8,
       def: [
         { name: 'root' },
         { name: 'body', parent: 'root', offset: [0, 1.5, 0], mat: 'evil', build: function (mb) {
             mb.setColorHex(0xffffff);
-            mb.taper(0, -1.2, 0, 0.2, 0.2, 1.3, 1.0, 1.6, 0, 0, 1.0);
-            mb.sphere(0, 0.15, 0, 0.62, 8, 5, 1.1);
+            mb.tube(ROBE, 11, { v: 0.45 });
+            /* sleeves hanging where arms would be, tapering to nothing */
+            for (var sd = -1; sd <= 1; sd += 2) {
+              mb.tube([
+                { x: sd * 0.58, y: 0.30, z: 0.02, r: 0.26 },
+                { x: sd * 0.84, y: -0.06, z: 0.08, r: 0.22 },
+                { x: sd * 0.92, y: -0.46, z: 0.14, r: 0.16 },
+                { x: sd * 0.88, y: -0.76, z: 0.18, r: 0.03 }
+              ], 7);
+            }
+            /* a mantle over the shoulders, so the hood reads as separate */
+            mb.setColorHex(0xb8a0d8);
+            mb.tube([
+              { y: 0.46, r: 0.56 }, { y: 0.34, r: 0.80 }, { y: 0.18, r: 0.88 }
+            ], 11, { capStart: false, capEnd: false });
           } },
-        { name: 'crown', parent: 'body', offset: [0, 0.55, 0], mat: 'gold', build: function (mb) {
-            mb.setColorHex(0xd8b040);
-            mb.cylinder(0, 0, 0, 0.58, 0.6, 0.16, 8, true, 1.4);
-            for (var i = 0; i < 5; i++) {
-              var a = i / 5 * M.TAU;
-              mb.taper(Math.sin(a) * 0.5, 0.14, Math.cos(a) * 0.5, 0.12, 0.12, 0.03, 0.03, 0.3, 0, 0, 2);
+        { name: 'crown', parent: 'body', offset: [0, 1.16, 0], mat: 'gold', build: function (mb) {
+            mb.setColorHex(0xf0cc60);
+            mb.tube([
+              { y: -0.12, r: 0.50 }, { y: 0.04, r: 0.56 }, { y: 0.20, r: 0.52 }
+            ], 11, { capStart: false, capEnd: false });
+            for (var i = 0; i < 6; i++) {
+              var a = i / 6 * M.TAU;
+              var sa = Math.sin(a), ca = Math.cos(a);
+              var h = i % 2 ? 0.30 : 0.52;
+              mb.tube([
+                { x: sa * 0.50, y: 0.16, z: ca * 0.50, r: 0.11 },
+                { x: sa * 0.47, y: 0.16 + h * 0.6, z: ca * 0.47, r: 0.06 },
+                { x: sa * 0.44, y: 0.16 + h, z: ca * 0.44, r: 0.01 }
+              ], 5);
             }
           } },
-        { name: 'face', parent: 'body', offset: [0, 0.12, 0.5], mat: 'bone', build: function (mb) {
-            mb.setColorHex(0xe8e0c8);
-            mb.box(0, 0, 0, 0.5, 0.52, 0.14, 1.6);
-            mb.setColorHex(0x201028);
-            mb.box(-0.14, 0.08, 0.08, 0.14, 0.16, 0.06, 2);
-            mb.box(0.14, 0.08, 0.08, 0.14, 0.16, 0.06, 2);
-            mb.box(0, -0.18, 0.08, 0.26, 0.10, 0.06, 2);
+        { name: 'face', parent: 'body', offset: [0, 0.94, 0.44], mat: 'bone', build: function (mb) {
+            /* a bone mask floating in the mouth of the hood: a curved shell
+               pushed clear of the robe, not a plate sunk into it */
+            mb.setColorHex(0xf4ecd8);
+            mb.tube([
+              { z: -0.06, rx: 0.28, ry: 0.34 },
+              { z: 0.12, rx: 0.34, ry: 0.40 },
+              { z: 0.28, rx: 0.30, ry: 0.35 },
+              { z: 0.38, rx: 0.18, ry: 0.20 }
+            ], 9, { axis: 'z', capStart: false });
+            mb.setColorHex(0x1a0e22);
+            mb.ovoid(0, -0.22, 0.30, 0.14, 0.06, 0.05, 7, 4);
           } },
-        { name: 'lampL', parent: 'body', offset: [-0.85, -0.1, 0.2], mat: 'gemBlue', build: lampBuild },
-        { name: 'lampR', parent: 'body', offset: [0.85, -0.1, 0.2], mat: 'gemRed', build: lampBuild }
+        { name: 'gaze', parent: 'face', offset: [0, 0.10, 0.26], mat: 'glowPurple', build: function (mb) {
+            mb.setColorHex(0xffffff);
+            mb.ovoid(-0.15, 0, 0, 0.08, 0.07, 0.06, 6, 4);
+            mb.ovoid(0.15, 0, 0, 0.08, 0.07, 0.06, 6, 4);
+          } },
+        { name: 'lampL', parent: 'body', offset: [-1.05, 0.05, 0.30], mat: 'glowBlue', build: lampBuild },
+        { name: 'lampR', parent: 'body', offset: [1.05, 0.05, 0.30], mat: 'glowRed', build: lampBuild }
       ]
     };
     function lampBuild(mb) {
       mb.setColorHex(0xffffff);
-      mb.sphere(0, 0, 0, 0.26, 6, 4, 1);
+      mb.ovoid(0, 0, 0, 0.24, 0.30, 0.24, 8, 6);
+      mb.ovoid(0, 0.30, 0, 0.07, 0.11, 0.07, 5, 4);
     }
   }
   var HOLLOW_CLIPS = {
@@ -967,13 +1292,13 @@ var LZ = LZ || {};
   /* ---------------------------------------------------------------- */
   function GenmoFinal(g, o) {
     Boss.call(this, g, {
-      x: o.x, y: o.y, z: o.z, hp: 44, radius: 0.55, height: 2.0,
+      x: o.x, y: o.y, z: o.z, hp: 44, radius: 0.62, height: 2.3,
       speed: 4.6, sight: 40, damage: 2,
       bossName: 'GENMO, HEIR OF THE DARK', maxPhase: 3, dungeon: 'fortress'
     });
     this.setModel(LZ.charModel(g.r, 'genmo2', function () { return genmoRig(2); }, LZ.Models.getHumanoidClips()));
-    this.height = 2.0;
-    this.lockHeight = 1.2;
+    this.height = 2.3;
+    this.lockHeight = 1.4;
     this.music = 'genmo';
     this.mode = 'ground';
     this.modeTime = 0;

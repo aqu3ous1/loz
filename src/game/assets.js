@@ -97,7 +97,7 @@ var LZ = LZ || {};
       self._t('rock', t.rock(0x706c68, 13));
       self._t('rockRed', t.rock(0x8a5a44, 17));
       self._t('rockDark', t.rock(0x4a4854, 23));
-      self._t('rockAsh', t.rock(0x5c5854, 31));
+      self._t('rockAsh', t.rock(0x7c746c, 31));
       self._t('snow', t.snow(21));
       self._t('ice', t.water(0x9fd8ee, 43));
       self._t('lava', t.lava(31));
@@ -114,7 +114,7 @@ var LZ = LZ || {};
       self._t('planksPale', t.planks(0xb69a68, 71));
       self._t('bark', t.bark(0x6b4d30, 71));
       self._t('barkPine', t.bark(0x4c3a28, 73));
-      self._t('barkDead', t.bark(0x584c40, 79));
+      self._t('barkDead', t.bark(0x77685a, 79));
       self._t('thatch', t.thatch(81));
       self._t('shingleRed', t.shingle(0x8c3a34, 91));
       self._t('shingleBlue', t.shingle(0x36527e, 93));
@@ -145,6 +145,8 @@ var LZ = LZ || {};
       self._t('grassbladeDry', t.grassblade(0xa89a54, 183));
       self._t('flowers', t.flowers(0xf0e8b0, 191));
       self._t('flowersRed', t.flowers(0xd9484c, 193));
+      self._t('petalRed', t.petal(0xd0505e, 211));
+      self._t('petalPale', t.petal(0xe8c0a0, 217));
       self._t('vines', t.vines(201));
       self._t('cobweb', t.cobweb(), { wrap: 'clamp' });
     });
@@ -217,7 +219,7 @@ var LZ = LZ || {};
         'clothPurple', 'clothBlack', 'leather', 'leatherDark', 'skin', 'skinTan', 'skinPale', 'skinOld',
         'hairBrown', 'hairBlond', 'hairWhite', 'hairRed', 'scaleGreen', 'scaleBlue', 'scaleRed',
         'bone', 'furPurple', 'furGrey', 'evil', 'evilRed', 'evilGold',
-        'gemGreen', 'gemBlue', 'gemRed', 'gemPurple'];
+        'gemGreen', 'gemBlue', 'gemRed', 'gemPurple', 'petalRed', 'petalPale'];
       for (var i = 0; i < opaque.length; i++) {
         if (self.tex[opaque[i]]) self._m(opaque[i], opaque[i], {});
       }
@@ -233,6 +235,12 @@ var LZ = LZ || {};
       self._m('waterMurk', 'waterMurk', { blend: 'alpha', cull: 'none', depthWrite: false, queue: 5 });
       self._m('ice', 'ice', { blend: 'alpha', cull: 'none', depthWrite: true });
       self._m('lava', 'lava', { lit: false, prim: [1.25, 1.1, 1.0, 1] });
+      /* self-lit weak points and gems: a boss's vulnerable spot has to stay
+         readable inside a dark cavity, which lit geometry never manages */
+      self._m('glowGreen', 'gemGreen', { lit: false, prim: [1.30, 1.35, 1.05, 1] });
+      self._m('glowBlue', 'gemBlue', { lit: false, prim: [1.05, 1.25, 1.40, 1] });
+      self._m('glowRed', 'gemRed', { lit: false, prim: [1.40, 1.05, 1.00, 1] });
+      self._m('glowPurple', 'gemPurple', { lit: false, prim: [1.25, 1.00, 1.40, 1] });
       self._m('jellyBlue', 'jellyBlue', { blend: 'alpha', cull: 'none' });
       self._m('jellyRed', 'jellyRed', { blend: 'alpha', cull: 'none' });
       self._m('jellyGreen', 'jellyGreen', { blend: 'alpha', cull: 'none' });

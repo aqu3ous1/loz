@@ -158,6 +158,31 @@ var LZ = LZ || {};
           { x: 0, y: B.torso * 0.96 * s, z: 0, rx: B.chest * 0.86 * s, rz: B.chest * 0.68 * s },
           { x: 0, y: B.torso * 1.05 * s, z: 0, rx: B.chest * 0.66 * s, rz: B.chest * 0.54 * s }
         ], SIDES, { u: 1, v: 2, capStart: false });
+        if (o.pauldron) {
+          /* a villain needs shoulders: two swept plates that widen the
+             silhouette without touching the arm bones, so every clip still
+             animates unchanged */
+          mb.setColorHex(o.pauldron);
+          for (var pd = -1; pd <= 1; pd += 2) {
+            mb.tube([
+              { x: pd * B.shoulderX * 0.55 * s, y: B.torso * 1.02 * s, z: 0,
+                rx: B.armR * 1.0 * s, rz: B.chest * 0.62 * s },
+              { x: pd * B.shoulderX * 1.05 * s, y: B.torso * 0.98 * s, z: 0,
+                rx: B.armR * 1.5 * s, rz: B.chest * 0.84 * s },
+              { x: pd * B.shoulderX * 1.45 * s, y: B.torso * 0.80 * s, z: 0,
+                rx: B.armR * 1.4 * s, rz: B.chest * 0.72 * s },
+              { x: pd * B.shoulderX * 1.62 * s, y: B.torso * 0.60 * s, z: 0,
+                rx: B.armR * 0.7 * s, rz: B.chest * 0.42 * s }
+            ], 8, { axis: 'x', u: 1, v: 2 });
+            /* a spike off the crest of each plate */
+            mb.setColorHex(trimC);
+            mb.tube([
+              { x: pd * B.shoulderX * 1.15 * s, y: B.torso * 1.02 * s, z: 0, r: 0.045 * s },
+              { x: pd * B.shoulderX * 1.35 * s, y: B.torso * 1.30 * s, z: 0, r: 0.026 * s },
+              { x: pd * B.shoulderX * 1.48 * s, y: B.torso * 1.48 * s, z: 0, r: 0.004 * s }
+            ], 5);
+          }
+        }
         if (o.sash) {
           mb.setColorHex(o.sashColor || trimC);
           mb.tube([

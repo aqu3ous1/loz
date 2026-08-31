@@ -445,6 +445,30 @@ var LZ = LZ || {};
     });
     return t.posterize();
   };
+  /* An opaque petal / fleshy-leaf sheet: a soft gradient with a midrib and
+     side veins. Used for boss flora, where a cutout flower sprite would just
+     alpha away to nothing. */
+  T.petal = function (tintHex, seed) {
+    var base = hex(tintHex || 0xd0505e);
+    var t = new Tile(32, 32);
+    t.each(function (x, y) {
+      var u = x / 31, v = y / 31;
+      /* darker toward the base of the petal, paler toward the tip */
+      var k = 0.72 + v * 0.42;
+      var n = M.valueNoise2(u * 5.5, v * 5.5, seed || 211);
+      k *= 0.92 + n * 0.16;
+      /* midrib and a fan of side veins */
+      var rib = Math.abs(u - 0.5);
+      if (rib < 0.045) k *= 0.74;
+      var fan = Math.abs(Math.sin((u - 0.5) * 9.0 + v * 4.5));
+      if (fan < 0.13) k *= 0.88;
+      /* the edges roll under and catch less light */
+      if (u < 0.09 || u > 0.91) k *= 0.80;
+      var c = shade(base, k);
+      t.set(x, y, c[0], c[1], c[2], 255);
+    });
+    return t.posterize();
+  };
   T.vines = function (seed) {
     var t = new Tile(32, 64);
     var base = hex(0x3d6b34);
