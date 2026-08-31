@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>The Legend of Zelda: Descendants</title>
+<style>
+  :root { color-scheme: dark; }
+  html, body {
+    margin: 0; padding: 0; height: 100%; background: #05060a; overflow: hidden;
+    font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; color: #cfd6e6;
+  }
+  #wrap { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+  canvas#screen {
+    image-rendering: pixelated; image-rendering: crisp-edges;
+    display: block; background: #000; touch-action: none; outline: none;
+    box-shadow: 0 0 0 2px #14161f, 0 0 60px rgba(0,0,0,0.9);
+  }
+  #boot {
+    position: fixed; inset: 0; display: flex; flex-direction: column; gap: 14px;
+    align-items: center; justify-content: center; background: #05060a; z-index: 20;
+    text-align: center; padding: 24px; letter-spacing: 0.06em;
+  }
+  #boot h1 { font-size: 15px; font-weight: 600; margin: 0; color: #d8c98a; }
+  #boot p  { font-size: 11px; margin: 0; color: #7d879c; max-width: 34em; line-height: 1.7; }
+  #boot button {
+    margin-top: 8px; background: #1a1f2e; color: #e6ecf8;
+    border: 1px solid #3b445e; padding: 10px 22px; font: inherit; font-size: 12px;
+    letter-spacing: 0.12em; cursor: pointer; border-radius: 2px;
+  }
+  #boot button:hover { background: #26304a; color: #fff; }
+  #err { position: fixed; inset: 0; background: #12060a; color: #ffb4b4; padding: 24px;
+         font-size: 12px; white-space: pre-wrap; overflow: auto; z-index: 40; display: none; }
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="screen" width="960" height="720" tabindex="0"></canvas></div>
+
+<div id="boot">
+  <h1>THE LEGEND OF ZELDA: DESCENDANTS</h1>
+  <p id="bootmsg">Generating cartridge data&hellip;</p>
+  <button id="bootbtn" style="display:none">PRESS START</button>
+</div>
+<div id="err"></div>
+
+<script src="src/core/math.js"></script>
+<script src="src/core/texture.js"></script>
+<script src="src/core/input.js"></script>
+<script src="src/core/audio.js"></script>
+<script src="src/render/shaders.js"></script>
+<script src="src/core/gl.js"></script>
+<script src="src/render/font.js"></script>
+<script src="src/render/icons.js"></script>
+<script src="src/render/sprite.js"></script>
+<script src="src/game/music.js"></script>
+<script src="src/game/assets.js"></script>
+<script src="src/game/anim.js"></script>
+<script src="src/game/models.js"></script>
+<script src="src/game/particles.js"></script>
+<script src="src/game/collision.js"></script>
+<script src="src/game/camera.js"></script>
+<script src="src/game/actor.js"></script>
+<script src="src/game/items.js"></script>
+<script src="src/game/inventory.js"></script>
+<script src="src/game/player.js"></script>
+<script src="src/game/enemies.js"></script>
+<script src="src/game/bosses.js"></script>
+<script src="src/game/npc.js"></script>
+<script src="src/game/props.js"></script>
+<script src="src/game/dialogue.js"></script>
+<script src="src/game/hud.js"></script>
+<script src="src/game/menu.js"></script>
+<script src="src/game/save.js"></script>
+<script src="src/game/quest.js"></script>
+<script src="src/game/script.js"></script>
+<script src="src/game/world.js"></script>
+<script src="src/game/areas/index.js"></script>
+<script src="src/main.js"></script>
+</body>
+</html>
