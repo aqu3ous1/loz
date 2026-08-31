@@ -157,15 +157,37 @@ var LZ = LZ || {};
 
     /* per-vertex shade baked from the surface normal: the era's terrain was
        almost always vertex-lit and pre-shaded like this */
+    /* Aerial perspective, baked in. The valley rims are only thirty or forty
+       units out, so distance fog alone barely touches them and they read as a
+       grey wall pasted behind the town. Washing the high ground toward the
+       fog colour is what makes the same geometry read as mountains -- the
+       trick every N64 outdoor map used. */
+    var hazeLo = area.hazeFrom === undefined ? 0.5 : area.hazeFrom;
+    var hazeHi = area.hazeTo === undefined ? 10 : area.hazeTo;
+    var hazeMax = area.hazeMax === undefined ? 0.55 : area.hazeMax;
+    var fogC = this.fog && this.fog.color ? this.fog.color : [0.7, 0.78, 0.88];
     function vcol(x, z, h, matIdx) {
       f.normal(x, z, nrm);
-      var lit = 0.62 + M.saturate(nrm[1]) * 0.38;
+      /* Slopes must not fall to near-black. A valley seen from a low camera
+         is mostly slope, and a steep face at 0.62 of full shade reads as a
+         grey wall behind the town rather than as ground going uphill. */
+      var lit = 0.76 + M.saturate(nrm[1]) * 0.28;
       var ao = 1;
       if (area.groundShade) ao = area.groundShade(x, z, h, nrm);
       var c = [lit * ao, lit * ao, lit * ao, 1];
       if (tintFn) {
         var t = tintFn(x, z, h, matIdx);
         if (t) { c[0] *= t[0]; c[1] *= t[1]; c[2] *= t[2]; }
+      }
+      if (hazeMax > 0 && h > hazeLo) {
+        var k = M.smoothstep(hazeLo, hazeHi, h) * hazeMax;
+        var tn = tone(matIdx);
+        for (var q = 0; q < 3; q++) {
+          /* vertex colour multiplies the texture, so aim at the ratio that
+             lands the lit texel on the fog colour */
+          var want = fogC[q] / (tn[q] || 0.6);
+          c[q] = c[q] * (1 - k) + want * k;
+        }
       }
       return c;
     }
@@ -187,7 +209,10 @@ var LZ = LZ || {};
 
         var h00 = f.h[j * f.nx + i], h10 = f.h[j * f.nx + i + 1];
         var h01 = f.h[(j + 1) * f.nx + i], h11 = f.h[(j + 1) * f.nx + i + 1];
-        var us = f.cell / 2.2;
+        /* One tile per ~2.7 world units. Tighter than this and a wide field
+           dissolves into pixel noise at distance; looser and the filtering
+           smears it to flat colour. */
+        var us = f.cell / 2.7;
 
         var c00 = vcol(x0, z0, h00, t00), c10 = vcol(x1, z0, h10, t10);
         var c01 = vcol(x0, z1, h01, t01), c11 = vcol(x1, z1, h11, t11);

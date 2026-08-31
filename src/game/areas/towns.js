@@ -97,7 +97,7 @@ var LZ = LZ || {};
     groundMats: ['grass', 'dirt', 'cobble', 'rock'],
     surfaces: ['grass', 'dirt', 'stone', 'stone'],
     terrain: K.basin({
-      seed: 3, amp: 1.1, scale: 0.02, base: 0, inner: 30, outer: 44, wall: 15, wallMat: 3,
+      seed: 3, amp: 1.1, scale: 0.02, base: 0, inner: 33, outer: 46, wall: 12, wallMat: 3,
       paths: [
         { pts: [0, -22, 0, 6, 4, 20, 6, 44], w: 3.2, h: 0.1, mat: 2 },
         { pts: [-16, 2, 16, 2], w: 2.4, h: 0.2, mat: 1 }
@@ -132,7 +132,7 @@ var LZ = LZ || {};
       P.fence(ctx.batch, 22, -14, 22, 14, w.groundHeight(22, 0), {});
       P.stall(ctx.batch, -6, w.groundHeight(-6, 6), 6, { yaw: 0.6, awning: 'clothRed' });
 
-      K.forest(ctx, { seed: 12, count: 46, x0: -42, x1: 42, z0: -42, z1: 42, minDist: 5,
+      K.forest(ctx, { seed: 12, count: 96, x0: -44, x1: 44, z0: -44, z1: 44, minDist: 4,
         kind: 'mixed', filter: function (x, z) {
           return Math.abs(x) > 16 || Math.abs(z) > 22;
         } });

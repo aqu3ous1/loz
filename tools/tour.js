@@ -39,11 +39,20 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await sleep(300);
 
   const stops = JSON.parse(process.env.STOPS || '[]');
+  const probe = process.env.PROBE ? JSON.parse(process.env.PROBE) : null;
   for (const st of stops) {
     await page.evaluate((st) => {
       const g = window.GAME, LZ = window.LZ;
       g.goToArea(st.area, st.entry || 'default');
       g._doAreaChange();
+      if (st.hide === 'terrain') g.world.terrainMeshes = [];
+      if (st.hide === 'props') g.world.staticMeshes = [];
+      if (st.debugSky) {
+        var m = g.assets.mat[g.world.sky] || g.assets.mat.skyDay;
+        m.prim = [3.0, 0.0, 3.0, 1];
+      }
+      if (st.noBand) g.world.bandMesh = { __skip: true };
+      if (st.fog) { g.world.fog = { color: st.fog.color || g.world.fog.color, near: st.fog.near, far: st.fog.far, density: 1 }; g.world.applyEnvironment(); }
       if (st.pos) { g.player.pos[0] = st.pos[0]; g.player.pos[1] = st.pos[1]; g.player.pos[2] = st.pos[2]; }
       if (st.yaw !== undefined) { g.player.yaw = st.yaw; g.player.targetYaw = st.yaw; }
       g.cam.yaw = (st.camYaw === undefined ? g.player.yaw + Math.PI : st.camYaw);
@@ -54,6 +63,15 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     }, st);
     /* let the camera settle and animations tick */
     for (let i = 0; i < 40; i++) await sleep(25);
+    if (probe) {
+      const info = await page.evaluate((pts) => {
+        const g = window.GAME, w = g.world;
+        return pts.map(p => 'h(' + p[0] + ',' + p[1] + ') = ' + w.groundHeight(p[0], p[1]).toFixed(2))
+          .join('  |  ') + '  fog=' + JSON.stringify(w.fog.color) +
+          '  meshes=' + w.terrainMeshes.map(m => m.mat + ':' + m.tris).join(',');
+      }, probe);
+      console.log('PROBE ' + st.name + ' ' + info);
+    }
     await page.screenshot({ path: path.join(SHOTS, 'tour-' + st.name + '.png') });
     console.log('tour', st.name);
   }

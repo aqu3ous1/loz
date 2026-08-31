@@ -76,6 +76,8 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
         };
         g.world.fog = { color: [0.10, 0.10, 0.13], near: 40, far: 120, density: 1 };
       }
+      if (spec.env) { g.world.fog = spec.env.fog || g.world.fog; if (spec.env.sky) g.world.sky = spec.env.sky; }
+      if (spec.noBand) g.world.bandMesh = null, g.world.__noBand = true;
       g.__shotCam = spec.cam || [0, 1.15, 3.0];
       g.__shotTarget = spec.target || [0, 0.75, 0];
       const step = g.step.bind(g);

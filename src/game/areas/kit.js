@@ -54,18 +54,31 @@ var LZ = LZ || {};
     return best;
   };
 
-  /* a bowl-shaped valley with mountain walls at the edges */
+  /* A bowl-shaped valley with mountain walls at the edges.
+     Two details decide whether this reads as mountains or as a grey wall
+     pasted behind the town: the ground material has to keep climbing well up
+     the slope before it turns to rock, and the ridge line has to break up
+     rather than hold one height all the way round. */
   K.basin = function (o) {
     o = o || {};
     var inner = o.inner || 30, outer = o.outer || 46, wall = o.wall === undefined ? 16 : o.wall;
+    var seed = o.seed || 1;
+    var rockAt = o.rockAt === undefined ? 0.52 : o.rockAt;
     var base = K.rolling(o);
     return function (x, z) {
       var r = base(x, z);
       var d = Math.sqrt(x * x + z * z);
       if (d > inner) {
         var k = M.smoothstep(inner, outer, d);
-        r.h += k * k * wall + M.ridge2(x * 0.05, z * 0.05, 3, (o.seed || 1) + 7) * k * 6;
-        if (k > 0.28) r.t = o.wallMat === undefined ? 2 : o.wallMat;
+        /* a slow-then-steep profile, so the valley floor runs out to a skirt
+           of grassy foothills before the cliffs start */
+        var rise = k * k * k * (3 - 2 * k);
+        /* peaks and saddles around the rim: one low-frequency band decides
+           how tall this stretch of the ridge gets, a second roughens it */
+        var crown = 0.62 + 0.58 * M.valueNoise2(Math.atan2(z, x) * 1.9 + 11, 4.5, seed + 23);
+        var rough = M.ridge2(x * 0.055, z * 0.055, 3, seed + 7);
+        r.h += rise * wall * crown + rough * k * k * 7.5;
+        if (k > rockAt) r.t = o.wallMat === undefined ? 2 : o.wallMat;
       }
       return r;
     };
@@ -416,7 +429,7 @@ var LZ = LZ || {};
       o = o || {};
       return {
         sky: o.sky || 'skyDay',
-        fog: o.fog || { color: [0.68, 0.77, 0.88], near: 22, far: 76, density: 1 },
+        fog: o.fog || { color: [0.76, 0.85, 0.93], near: 20, far: 68, density: 1 },
         light: o.light || {
           ambient: [0.46, 0.48, 0.54], dir0: [0.42, 0.80, 0.42], col0: [0.66, 0.62, 0.52],
           dir1: [-0.4, 0.35, -0.6], col1: [0.16, 0.20, 0.28]
@@ -428,7 +441,7 @@ var LZ = LZ || {};
       o = o || {};
       return {
         sky: 'skyDusk',
-        fog: { color: [0.56, 0.43, 0.44], near: 16, far: 62, density: 1 },
+        fog: { color: [0.78, 0.56, 0.44], near: 16, far: 62, density: 1 },
         light: {
           ambient: [0.36, 0.32, 0.40], dir0: [0.6, 0.42, -0.5], col0: [0.78, 0.50, 0.34],
           dir1: [-0.3, 0.5, 0.4], col1: [0.16, 0.18, 0.34]
@@ -440,7 +453,7 @@ var LZ = LZ || {};
       o = o || {};
       return {
         sky: 'skyNight',
-        fog: { color: [0.12, 0.14, 0.24], near: 10, far: 46, density: 1 },
+        fog: { color: [0.17, 0.17, 0.31], near: 10, far: 46, density: 1 },
         light: {
           ambient: [0.22, 0.24, 0.36], dir0: [0.2, 0.7, -0.3], col0: [0.26, 0.30, 0.48],
           dir1: [-0.4, 0.3, 0.5], col1: [0.10, 0.12, 0.22]
@@ -452,7 +465,7 @@ var LZ = LZ || {};
       o = o || {};
       return {
         sky: 'skyDesert',
-        fog: { color: [0.88, 0.80, 0.62], near: 20, far: 78, density: 1 },
+        fog: { color: [0.91, 0.82, 0.63], near: 20, far: 78, density: 1 },
         light: {
           ambient: [0.56, 0.52, 0.44], dir0: [0.3, 0.88, 0.2], col0: [0.82, 0.74, 0.56],
           dir1: [-0.4, 0.3, -0.5], col1: [0.20, 0.18, 0.16]
@@ -464,7 +477,7 @@ var LZ = LZ || {};
       o = o || {};
       return {
         sky: 'skyAsh',
-        fog: { color: [0.46, 0.44, 0.46], near: 12, far: 56, density: 1 },
+        fog: { color: [0.55, 0.50, 0.47], near: 12, far: 56, density: 1 },
         light: {
           ambient: [0.34, 0.33, 0.36], dir0: [0.3, 0.7, 0.3], col0: [0.48, 0.44, 0.42],
           dir1: [-0.3, 0.4, -0.5], col1: [0.18, 0.16, 0.20]

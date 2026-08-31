@@ -108,13 +108,15 @@ var LZ = LZ || {};
       var patch = wfbm(x, y, 64, 64, 2, 2, (seed || 1) + 77);
       var n2 = wnoise(x, y, 64, 64, 32, (seed || 1) + 41);
       var c = mixc(base, alt, M.saturate(n * 1.25 - 0.05));
-      /* broad patches keep a big field from reading as one flat colour */
-      c = shade(c, 0.80 + patch * 0.42);
-      c = shade(c, 0.90 + n2 * 0.22);
+      /* Broad patches keep a big field from reading as one flat colour, but
+         the swing has to stay narrow: brightening past about 1.2 turns an
+         olive green into fluorescent lime once the vertex light lands on it. */
+      c = shade(c, 0.86 + patch * 0.28);
+      c = shade(c, 0.94 + n2 * 0.13);
       /* blade flecks and bare spots */
-      if (n2 > 0.94) c = mixc(c, [162, 196, 104, 255], 0.55);
-      if (n2 < 0.04) c = shade(c, 0.72);
-      if (patch < 0.18) c = mixc(c, [118, 104, 72, 255], 0.34);
+      if (n2 > 0.95) c = mixc(c, [148, 172, 96, 255], 0.42);
+      if (n2 < 0.05) c = shade(c, 0.80);
+      if (patch < 0.16) c = mixc(c, [116, 106, 74, 255], 0.30);
       t.set(x, y, c[0], c[1], c[2], 255);
     });
     return t.posterize();
@@ -893,12 +895,21 @@ var LZ = LZ || {};
     var A = hex(topHex), B = hex(botHex);
     var t = new Tile(64, 64);
     t.each(function (x, y) {
-      var v = y / 63;
-      var c = mixc(A, B, Math.pow(v, 0.85));
-      /* soft banded cloud shelves, very N64 skybox */
-      var n = wfbm(x, y * 2, 64, 128, 5, 3, seed || 331);
-      var cloud = M.smoothstep(0.52, 0.74, n) * M.smoothstep(0.02, 0.35, v) * M.smoothstep(1.0, 0.6, v);
-      c = mixc(c, [246, 246, 250, 255], cloud * 0.7);
+      var v = y / 63;                       /* 0 = zenith, 1 = horizon */
+      /* Hold the deep colour high and let it fall away fast near the
+         horizon: a linear ramp reads as a washed-out grey wall, while this
+         keeps a real blue overhead the way an N64 skybox did. */
+      var c = mixc(A, B, Math.pow(v, 1.9));
+      /* flat-bottomed cloud shelves stacked toward the horizon */
+      var n = wfbm(x, y * 2.4, 64, 154, 5, 3, seed || 331);
+      var shelf = M.smoothstep(0.50, 0.68, n);
+      /* the bands compress with distance, so more of them low in the sky */
+      var stack = 0.35 + 0.65 * M.smoothstep(0.10, 0.72, v);
+      var cloud = shelf * stack * M.smoothstep(0.04, 0.30, v) * M.smoothstep(1.0, 0.74, v);
+      c = mixc(c, [250, 250, 252, 255], cloud * 0.85);
+      /* a warm haze right at the horizon line */
+      var haze = M.smoothstep(0.80, 1.0, v);
+      c = mixc(c, mixc(B, [255, 250, 236, 255], 0.35), haze * 0.55);
       t.set(x, y, c[0], c[1], c[2], 255);
     });
     return t.posterize();

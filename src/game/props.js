@@ -831,8 +831,11 @@ var LZ = LZ || {};
       var sy = Math.cos(phi), sr = Math.sin(phi);
       for (var xq = 0; xq <= segs; xq++) {
         var th = xq / segs * M.TAU;
+        /* textures upload with UNPACK_FLIP_Y, so v must be inverted here or
+           the gradient hangs upside down: pale at the zenith, deep blue at
+           the horizon, which is exactly backwards */
         row.push(mb.vert(Math.sin(th) * sr * s, sy * s * 0.75 - s * 0.06, Math.cos(th) * sr * s,
-          0, -1, 0, xq / segs * 2, y / rings));
+          0, -1, 0, xq / segs * 2, 1 - y / rings));
       }
       grid.push(row);
     }
