@@ -383,12 +383,21 @@ var LZ = LZ || {};
     var base = hex(colHex || 0x63a34b);
     var t = new Tile(32, 32);
     t.each(function (x, y) {
-      var col = Math.floor(x / 4);
+      var col = Math.floor(x / 5), within = x % 5;
       var h = M.hash2(col, 0, seed || 181);
-      var top = 6 + h * 14;
-      var a = (y > top) ? 255 : 0;
-      if (x % 4 === 3) a = 0;
-      var c = shade(base, 0.6 + (y / 32) * 0.7 + h * 0.2);
+      var top = 5 + h * 12;
+      var a = 0;
+      var c = base;
+      if (within >= 1 && within <= 3 && y > top) {
+        /* the tip narrows to a single column so blades read as blades */
+        a = (y < top + 3 && within !== 2) ? 0 : 255;
+      }
+      if (a) {
+        var up = (y - top) / (32 - top);
+        c = shade(base, 0.55 + up * 0.62 + h * 0.22);
+        if (within === 1) c = shade(c, 0.86);
+        if (within === 3) c = shade(c, 1.10);
+      }
       t.set(x, y, c[0], c[1], c[2], a);
     });
     return t.posterize();
@@ -400,10 +409,16 @@ var LZ = LZ || {};
       var a = 0, c = leaf;
       var col = Math.floor(x / 8), row = Math.floor(y / 8);
       var h = M.hash2(col, row, seed || 191);
-      var cx = col * 8 + 4, cy = row * 8 + 4;
+      var cx = col * 8 + 2 + h * 4, cy = row * 8 + 2 + M.hash2(col, row, (seed || 191) + 5) * 4;
       var d = Math.sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
-      if (h > 0.45 && d < 2.6) { a = 255; c = shade(petal, 0.85 + h * 0.3); }
-      else if (d < 3.6 && h > 0.45 && (x + y) % 2 === 0) { a = 255; c = shade(leaf, 0.9); }
+      /* stem first, then a four-petal head on top of it */
+      if (h > 0.30) {
+        if (Math.abs(x - cx) < 0.9 && y > cy) { a = 255; c = shade(leaf, 0.8 + (y - cy) * 0.03); }
+        if (d < 1.3) { a = 255; c = shade(petal, 0.95 + h * 0.2); }
+        else if (d < 2.4 && (Math.abs(x - cx) < 0.9 || Math.abs(y - cy) < 0.9)) {
+          a = 255; c = shade(petal, 0.78 + h * 0.2);
+        }
+      }
       t.set(x, y, c[0], c[1], c[2], a);
     });
     return t.posterize();
@@ -510,6 +525,130 @@ var LZ = LZ || {};
       if (n * v > 0.42) c = mixc(c, [255, 200, 120, 255], 0.35);
       t.set(x, y, c[0], c[1], c[2], 255);
     });
+    return t.posterize();
+  };
+
+  /* ---- painted faces -------------------------------------------------
+     The N64 Zelda games did not model eyes and mouths; they painted them
+     onto a flat head texture, which is why the characters read as
+     expressive at 30 polygons. The plain skin patch in the top-right
+     corner is what the non-facing sides of the head sample. */
+  T.face = function (o) {
+    o = o || {};
+    var skin = hex(o.skin === undefined ? 0xe8c49c : o.skin);
+    var eyeCol = hex(o.eye === undefined ? 0x2f5a8a : o.eye);
+    var browCol = hex(o.brow === undefined ? 0x5a3c20 : o.brow);
+    var mouthCol = hex(o.mouth === undefined ? 0x8a4a44 : o.mouth);
+    var style = o.style || 'normal';
+    var seed = o.seed || 5;
+    var t = new Tile(64, 64);
+
+    /* base skin with a little grain */
+    t.each(function (x, y) {
+      var n = wfbm(x, y, 64, 64, 8, 2, seed);
+      var c = shade(skin, 1.02 + n * 0.10);
+      /* cheek warmth */
+      var dl = Math.sqrt((x - 17) * (x - 17) + (y - 40) * (y - 40));
+      var dr = Math.sqrt((x - 47) * (x - 47) + (y - 40) * (y - 40));
+      var blush = Math.max(0, 1 - Math.min(dl, dr) / 11) * (o.blush === undefined ? 0.20 : o.blush);
+      c = mixc(c, [232, 150, 132, 255], blush);
+      /* soft shading down the sides of the face */
+      var side = Math.max(0, (Math.abs(x - 32) - 16) / 16);
+      c = shade(c, 1 - side * 0.22);
+      t.set(x, y, c[0], c[1], c[2], 255);
+    });
+    /* keep a clean skin swatch for the sides/back of the head */
+    for (var py = 0; py < 12; py++) {
+      for (var px = 52; px < 64; px++) {
+        var n2 = wfbm(px, py, 64, 64, 8, 2, seed);
+        var cc = shade(skin, 0.96 + n2 * 0.10);
+        t.set(px, py, cc[0], cc[1], cc[2], 255);
+      }
+    }
+
+    function ellipse(cx, cy, rx, ry, col, fn) {
+      for (var y = Math.floor(cy - ry); y <= cy + ry; y++) {
+        for (var x = Math.floor(cx - rx); x <= cx + rx; x++) {
+          if (x >= 52 && y < 12) continue;         /* protect the swatch */
+          var dx = (x - cx) / rx, dy = (y - cy) / ry;
+          if (dx * dx + dy * dy <= 1) {
+            var c = fn ? fn(x, y, dx, dy) : col;
+            t.set(x, y, c[0], c[1], c[2], 255);
+          }
+        }
+      }
+    }
+    function rect(x0, y0, x1, y1, col) {
+      for (var y = y0; y <= y1; y++) for (var x = x0; x <= x1; x++) {
+        if (x >= 52 && y < 12) continue;
+        t.set(x, y, col[0], col[1], col[2], 255);
+      }
+    }
+
+    var eyeY = o.eyeY === undefined ? 26 : o.eyeY;
+    var eyeX = o.eyeX === undefined ? 14 : o.eyeX;
+    var open = o.eyeOpen === undefined ? 1 : o.eyeOpen;
+    var white = [246, 244, 238, 255];
+    var dark = [26, 22, 28, 255];
+
+    for (var side = -1; side <= 1; side += 2) {
+      var cx = 32 + side * eyeX;
+      if (style === 'closed' || open <= 0) {
+        rect(cx - 6, eyeY, cx + 6, eyeY + 1, dark);
+      } else {
+        /* sclera */
+        ellipse(cx, eyeY, 8.5, 7.0 * open, white);
+        /* iris + pupil, offset slightly inward so they look at the camera */
+        ellipse(cx - side * 1.4, eyeY + 0.8, 4.4, 5.4 * open, eyeCol);
+        ellipse(cx - side * 1.4, eyeY + 0.8, 2.2, 2.8 * open, dark);
+        /* catchlight -- one white pixel is what sells a painted eye */
+        t.set(Math.round(cx - side * 2.6), Math.round(eyeY - 1.6), 255, 255, 255, 255);
+        /* upper lash line */
+        rect(Math.round(cx - 8), Math.round(eyeY - 7.0 * open), Math.round(cx + 8),
+             Math.round(eyeY - 7.0 * open + 1), dark);
+      }
+      /* brow */
+      var browY = eyeY - 12 + (o.browY || 0);
+      var tilt = ({ angry: 3, stern: 2, sad: -3, normal: 0, old: 1 })[style] || 0;
+      for (var bx = -8; bx <= 8; bx++) {
+        var by = browY + Math.round(side * 0 + (bx * side) * (tilt / 8));
+        rect(cx + bx, by, cx + bx, by + (style === 'old' ? 2 : 1), browCol);
+      }
+    }
+
+    /* nose shadow */
+    rect(31, eyeY + 12, 33, eyeY + 16, shade(skin, 0.86));
+
+    /* mouth */
+    var my = o.mouthY === undefined ? 46 : o.mouthY;
+    if (style === 'angry') {
+      rect(24, my, 40, my + 2, dark);
+      rect(26, my + 2, 38, my + 4, [140, 40, 44, 255]);
+      for (var tx = 26; tx < 39; tx += 4) rect(tx, my + 1, tx + 1, my + 3, [240, 236, 220, 255]);
+    } else if (style === 'sad' || style === 'old') {
+      for (var mx = -7; mx <= 7; mx++) {
+        rect(32 + mx, my + Math.round(Math.abs(mx) * 0.28), 32 + mx, my + 1 + Math.round(Math.abs(mx) * 0.28), mouthCol);
+      }
+    } else {
+      for (var mx2 = -6; mx2 <= 6; mx2++) {
+        rect(32 + mx2, my - Math.round(Math.abs(mx2) * 0.22), 32 + mx2,
+             my + 1 - Math.round(Math.abs(mx2) * 0.22), mouthCol);
+      }
+    }
+
+    if (style === 'old') {
+      /* wrinkles: a few short darker strokes */
+      rect(14, 24, 22, 24, shade(skin, 0.80));
+      rect(42, 24, 50, 24, shade(skin, 0.80));
+      rect(16, 44, 22, 45, shade(skin, 0.84));
+      rect(42, 44, 48, 45, shade(skin, 0.84));
+      rect(26, 20, 38, 20, shade(skin, 0.84));
+    }
+    if (o.marks) {
+      /* war paint / tattoo bands */
+      rect(10, 36, 22, 38, hex(o.marks));
+      rect(42, 36, 54, 38, hex(o.marks));
+    }
     return t.posterize();
   };
 

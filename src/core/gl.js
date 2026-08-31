@@ -352,13 +352,19 @@ var LZ = LZ || {};
     }
   };
 
-  Renderer.prototype._drawItem = function (item) {
+  Renderer.prototype._drawItem = function (item, mvpOverride) {
     var gl = this.gl, u = this.scene.u, mat = item.mat;
     this._applyState(mat);
 
-    M4.multiply(this._mvp, this.viewProj, item.m);
-    M4.multiply(this._mv, this.view, item.m);
-    M4.normalMat3(this._nrm, item.m);
+    if (mvpOverride) {
+      M4.copy(this._mvp, mvpOverride);
+      M4.identity(this._mv);
+      M4.normalMat3(this._nrm, item.m);
+    } else {
+      M4.multiply(this._mvp, this.viewProj, item.m);
+      M4.multiply(this._mv, this.view, item.m);
+      M4.normalMat3(this._nrm, item.m);
+    }
 
     gl.uniformMatrix4fv(u.uMVP, false, this._mvp);
     gl.uniformMatrix4fv(u.uMV, false, this._mv);
@@ -630,6 +636,123 @@ var LZ = LZ || {};
     return this;
   };
 
+  /* A swept tube through a list of rings. This is THE primitive for N64
+     character limbs: arms, legs, necks, torsos and hat tails were all
+     round tapered tubes with smooth normals, never boxes. Rings are
+     {x, y, z, r} or {x, y, z, rx, rz}. */
+  MeshBuilder.prototype.tube = function (rings, sides, opts) {
+    opts = opts || {};
+    sides = sides || 8;
+    var uScale = opts.u === undefined ? 1 : opts.u;
+    var vScale = opts.v === undefined ? 1 : opts.v;
+    var grid = [];
+    var i, k;
+    var vrun = 0;
+    for (i = 0; i < rings.length; i++) {
+      var rg = rings[i];
+      var rx = rg.rx === undefined ? rg.r : rg.rx;
+      var rz = rg.rz === undefined ? rg.r : rg.rz;
+      if (i > 0) {
+        var pv = rings[i - 1];
+        var dx = rg.x - pv.x, dy = rg.y - pv.y, dz = rg.z - pv.z;
+        vrun += Math.sqrt(dx * dx + dy * dy + dz * dz);
+      }
+      /* slope of the surface, so the normals are not all horizontal */
+      var slope = 0;
+      if (i < rings.length - 1) {
+        var nx2 = rings[i + 1];
+        var drn = ((nx2.rx === undefined ? nx2.r : nx2.rx) - rx);
+        var dyn = (nx2.y - rg.y) || 0.0001;
+        slope = -drn / dyn;
+      } else if (i > 0) {
+        var pv2 = rings[i - 1];
+        var drp = rx - (pv2.rx === undefined ? pv2.r : pv2.rx);
+        var dyp = (rg.y - pv2.y) || 0.0001;
+        slope = -drp / dyp;
+      }
+      var row = [];
+      for (k = 0; k <= sides; k++) {
+        var a = k / sides * M.TAU;
+        var sa = Math.sin(a), ca = Math.cos(a);
+        var n = [sa, slope, ca];
+        var nl = Math.sqrt(n[0] * n[0] + n[1] * n[1] + n[2] * n[2]) || 1;
+        row.push(this.vert(rg.x + sa * rx, rg.y, rg.z + ca * rz,
+          n[0] / nl, n[1] / nl, n[2] / nl,
+          k / sides * uScale, vrun * vScale));
+      }
+      grid.push(row);
+    }
+    for (i = 0; i < grid.length - 1; i++) {
+      for (k = 0; k < sides; k++) {
+        this.i.push(grid[i][k], grid[i][k + 1], grid[i + 1][k + 1]);
+        this.i.push(grid[i][k], grid[i + 1][k + 1], grid[i + 1][k]);
+      }
+    }
+    if (opts.capStart !== false) {
+      var r0 = rings[0];
+      var rr0 = r0.rx === undefined ? r0.r : r0.rx;
+      if (rr0 > 0.001) {
+        var c0 = this.vert(r0.x, r0.y, r0.z, 0, -1, 0, 0.5, 0.5);
+        for (k = 0; k < sides; k++) this.i.push(c0, grid[0][k + 1], grid[0][k]);
+      }
+    }
+    if (opts.capEnd !== false) {
+      var rn = rings[rings.length - 1];
+      var rrn = rn.rx === undefined ? rn.r : rn.rx;
+      if (rrn > 0.001) {
+        var cn = this.vert(rn.x, rn.y, rn.z, 0, 1, 0, 0.5, 0.5);
+        var last = grid[grid.length - 1];
+        for (k = 0; k < sides; k++) this.i.push(cn, last[k], last[k + 1]);
+      }
+    }
+    return this;
+  };
+
+  /* A straight tapered limb: the common case of tube(). */
+  MeshBuilder.prototype.limb = function (x, y, z, len, r0, r1, sides, opts) {
+    opts = opts || {};
+    var steps = opts.steps || 3;
+    var rings = [];
+    for (var i = 0; i <= steps; i++) {
+      var t = i / steps;
+      var r = M.lerp(r0, r1, t);
+      if (opts.bulge) r *= 1 + Math.sin(t * Math.PI) * opts.bulge;
+      rings.push({
+        x: x + (opts.dx || 0) * t, y: y + len * t, z: z + (opts.dz || 0) * t, r: r
+      });
+    }
+    return this.tube(rings, sides || 8, opts);
+  };
+
+  /* A smooth ovoid: heads, hands, berries, blobs. */
+  MeshBuilder.prototype.ovoid = function (cx, cy, cz, rx, ry, rz, segs, rings, opts) {
+    opts = opts || {};
+    segs = segs || 10; rings = rings || 7;
+    var grid = [];
+    var uvFn = opts.uv || null;
+    for (var y = 0; y <= rings; y++) {
+      var row = [];
+      var phi = y / rings * Math.PI;
+      var sy = Math.cos(phi), sr = Math.sin(phi);
+      for (var x = 0; x <= segs; x++) {
+        var th = x / segs * M.TAU;
+        var nx = Math.sin(th) * sr, ny = sy, nz = Math.cos(th) * sr;
+        var px = cx + nx * rx, py = cy + ny * ry, pz = cz + nz * rz;
+        var uv = uvFn ? uvFn(px - cx, py - cy, pz - cz, nx, ny, nz) : [x / segs, y / rings];
+        row.push(this.vert(px, py, pz, nx / rx, ny / ry, nz / rz, uv[0], uv[1]));
+      }
+      grid.push(row);
+    }
+    for (var yy = 0; yy < rings; yy++) {
+      for (var xx = 0; xx < segs; xx++) {
+        var a = grid[yy][xx], b = grid[yy][xx + 1], c = grid[yy + 1][xx + 1], d = grid[yy + 1][xx];
+        if (yy !== 0) this.i.push(a, c, b);
+        if (yy !== rings - 1) this.i.push(a, d, c);
+      }
+    }
+    return this;
+  };
+
   /* two crossed vertical quads -- the classic N64 foliage/grass billboard */
   MeshBuilder.prototype.cross = function (cx, cy, cz, w, h, planes) {
     planes = planes || 2;
@@ -717,12 +840,8 @@ var LZ = LZ || {};
       gl.uniform1i(this.scene.u.uTex, 0);
     }
     var u = this.scene.u;
-    gl.uniformMatrix4fv(u.uMVP, false, ortho);
-    gl.uniformMatrix4fv(u.uMV, false, _ident);
     gl.uniform2f(u.uSnapGrid, 0, 0);
     gl.uniform3f(u.uFogParams, 0, 1, 0);
-    this._drawItem({ mesh: mesh, m: _ident, mat: mat });
-    /* restore for any subsequent 3D work */
-    gl.uniformMatrix4fv(u.uMVP, false, this.viewProj);
+    this._drawItem({ mesh: mesh, m: _ident, mat: mat }, ortho);
   };
 })(LZ);

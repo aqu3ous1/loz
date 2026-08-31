@@ -27,6 +27,37 @@ var LZ = LZ || {};
     return this.mat[name];
   };
 
+  /* Faces are generated on demand and cached by key, so a village of
+     fifteen people costs fifteen 64x64 tiles and nothing else. */
+  Assets.prototype.ensureFace = function (key, opts) {
+    var name = 'face_' + key;
+    if (this.mat[name]) return name;
+    var tile = Tex.face(opts || {});
+    this._t(name, tile, { wrap: 'clamp' });
+    this._m(name, name, {});
+    return name;
+  };
+
+  /* Per-frame material pool. submit() keeps a reference to the material and
+     draws later, so anything that varies per actor (damage flash, fade-out)
+     needs its own object -- but allocating one per bone per frame would
+     churn the GC, so they are recycled. */
+  Assets.prototype.beginFrame = function () { this._poolIdx = 0; };
+  Assets.prototype.frameMat = function (base, over) {
+    if (!this._pool) { this._pool = []; this._poolIdx = 0; }
+    if (this._poolIdx >= this._pool.length) {
+      this._pool.push(GL.material({}));
+    }
+    var m = this._pool[this._poolIdx++];
+    var src = (typeof base === 'string') ? (this.mat[base] || this.mat.white) : base;
+    for (var k in src) m[k] = src[k];
+    m.prim = m.prim.slice ? m.prim.slice() : [1, 1, 1, 1];
+    m.tint = m.tint.slice ? m.tint.slice() : [0, 0, 0, 0];
+    m.uv = m.uv.slice ? m.uv.slice() : [1, 1, 0, 0];
+    if (over) for (var j in over) m[j] = over[j];
+    return m;
+  };
+
   /* a per-call copy so callers can tint/scroll without stomping the shared one */
   Assets.prototype.clone = function (name, over) {
     var base = this.mat[name] || this.mat.white;
@@ -112,7 +143,7 @@ var LZ = LZ || {};
       self._t('pine', t.leaves(0x2c4f34, 181));
       self._t('grassblade', t.grassblade(0x63a34b, 181));
       self._t('grassbladeDry', t.grassblade(0xa89a54, 183));
-      self._t('flowers', t.flowers(0xe8d45a, 191));
+      self._t('flowers', t.flowers(0xf0e8b0, 191));
       self._t('flowersRed', t.flowers(0xd9484c, 193));
       self._t('vines', t.vines(201));
       self._t('cobweb', t.cobweb(), { wrap: 'clamp' });

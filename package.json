@@ -1,0 +1,13 @@
+{
+  "name": "zelda-descendants",
+  "version": "1.0.0",
+  "private": true,
+  "description": "The Legend of Zelda: Descendants - an N64-style action adventure built entirely in code",
+  "scripts": {
+    "start": "python3 -m http.server 8080",
+    "test": "node tools/playtest.js"
+  },
+  "devDependencies": {
+    "playwright": "^1.49.1"
+  }
+}

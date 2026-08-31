@@ -171,6 +171,14 @@ var LZ = LZ || {};
     return out;
   };
 
+  /* a filled circle -- the round A/B/C buttons of the era */
+  UI.prototype.disc = function (cx, cy, r, col) {
+    this.quad(this.a.tex.dotHard, cx - r, cy - r, r * 2, r * 2, 0.02, 0.02, 0.98, 0.98, col);
+  };
+  UI.prototype.discOutline = function (cx, cy, r, col) {
+    this.quad(this.a.tex.ring, cx - r, cy - r, r * 2, r * 2, 0, 0, 1, 1, col);
+  };
+
   /* ---------------- icons ---------------- */
   UI.prototype.icon = function (name, x, y, size, col) {
     var uv = this.a.iconUV[name];

@@ -23,230 +23,398 @@ var LZ = LZ || {};
        build: 'child'|'teen'|'adult'|'heavy'|'old'|'lanky',
        cape, capeColor, beard, skinTex, clothTex, hairTex, bootTex
      } */
+  /* ---------------------------------------------------------------- *
+   * Humanoid rig.
+   *
+   * Everything here is a swept round tube or an ovoid, because that is
+   * what N64 Zelda characters actually were: soft tapered limbs with
+   * smooth vertex normals, a rounded head, a flared tunic, mitten hands,
+   * chunky boots, and a face painted flat onto the front of the skull.
+   * No part of a character is a box.
+   * ---------------------------------------------------------------- */
   Models.humanoid = function (opts) {
     var o = opts || {};
     var s = o.scale || 1;
     var build = o.build || 'teen';
-    var P = {
-      child:  { hip: 0.56, torso: 0.34, headR: 0.145, arm: 0.20, thigh: 0.26, shin: 0.28, w: 0.90, shoulder: 0.145 },
-      teen:   { hip: 0.68, torso: 0.42, headR: 0.140, arm: 0.24, thigh: 0.32, shin: 0.34, w: 1.00, shoulder: 0.170 },
-      adult:  { hip: 0.80, torso: 0.50, headR: 0.145, arm: 0.29, thigh: 0.38, shin: 0.40, w: 1.08, shoulder: 0.195 },
-      heavy:  { hip: 0.80, torso: 0.50, headR: 0.155, arm: 0.30, thigh: 0.38, shin: 0.40, w: 1.34, shoulder: 0.235 },
-      lanky:  { hip: 0.88, torso: 0.54, headR: 0.135, arm: 0.34, thigh: 0.44, shin: 0.44, w: 0.92, shoulder: 0.190 },
-      old:    { hip: 0.70, torso: 0.44, headR: 0.145, arm: 0.26, thigh: 0.33, shin: 0.35, w: 1.00, shoulder: 0.165 }
-    }[build] || null;
-    if (!P) throw new Error('unknown humanoid build: ' + build);
 
-    var W = P.w;
-    var skinC = o.skin === undefined ? 0xe8c49c : o.skin;
+    /* Body plan in metres before `scale`. Head is roughly a quarter of
+       total height, which is the era's readable-at-320x240 silhouette. */
+    var B = {
+      child: { hip: 0.60, torso: 0.29, waist: 0.105, chest: 0.128, shoulderX: 0.118,
+               headX: 0.146, headY: 0.162, headZ: 0.140, arm: 0.175, fore: 0.155, armR: 0.046,
+               thigh: 0.215, shin: 0.215, legR: 0.062, hipX: 0.062, skirt: 0.185, foot: 0.16 },
+      teen:  { hip: 0.72, torso: 0.34, waist: 0.115, chest: 0.145, shoulderX: 0.137,
+               headX: 0.156, headY: 0.174, headZ: 0.150, arm: 0.215, fore: 0.190, armR: 0.052,
+               thigh: 0.262, shin: 0.258, legR: 0.072, hipX: 0.072, skirt: 0.215, foot: 0.185 },
+      adult: { hip: 0.86, torso: 0.41, waist: 0.132, chest: 0.170, shoulderX: 0.162,
+               headX: 0.158, headY: 0.178, headZ: 0.152, arm: 0.258, fore: 0.228, armR: 0.060,
+               thigh: 0.315, shin: 0.310, legR: 0.082, hipX: 0.082, skirt: 0.245, foot: 0.205 },
+      heavy: { hip: 0.86, torso: 0.42, waist: 0.176, chest: 0.212, shoulderX: 0.200,
+               headX: 0.170, headY: 0.188, headZ: 0.164, arm: 0.268, fore: 0.236, armR: 0.076,
+               thigh: 0.318, shin: 0.310, legR: 0.098, hipX: 0.098, skirt: 0.300, foot: 0.225 },
+      lanky: { hip: 0.96, torso: 0.45, waist: 0.112, chest: 0.140, shoulderX: 0.150,
+               headX: 0.144, headY: 0.168, headZ: 0.138, arm: 0.300, fore: 0.268, armR: 0.048,
+               thigh: 0.370, shin: 0.360, legR: 0.066, hipX: 0.074, skirt: 0.215, foot: 0.200 },
+      old:   { hip: 0.70, torso: 0.34, waist: 0.128, chest: 0.150, shoulderX: 0.140,
+               headX: 0.158, headY: 0.174, headZ: 0.150, arm: 0.230, fore: 0.205, armR: 0.054,
+               thigh: 0.258, shin: 0.252, legR: 0.074, hipX: 0.074, skirt: 0.235, foot: 0.190 }
+    }[build];
+    if (!B) throw new Error('unknown humanoid build: ' + build);
+
+    var skinC  = o.skin === undefined ? 0xe8c49c : o.skin;
     var clothC = o.cloth === undefined ? 0x3f9a4c : o.cloth;
-    var darkC = o.clothDark === undefined ? 0x2a6b36 : o.clothDark;
-    var trimC = o.trim === undefined ? 0xd8c078 : o.trim;
-    var bootC = o.boots === undefined ? 0x6b4a2c : o.boots;
-    var hairC = o.hair === undefined ? 0x6b4a26 : o.hair;
-    var hatC = o.hatColor === undefined ? clothC : o.hatColor;
-    var skinTex = o.skinTex || 'skin';
+    var darkC  = o.clothDark === undefined ? 0x2a6b36 : o.clothDark;
+    var trimC  = o.trim === undefined ? 0xd8c078 : o.trim;
+    var bootC  = o.boots === undefined ? 0x6b4a2c : o.boots;
+    var hairC  = o.hair === undefined ? 0x6b4a26 : o.hair;
+    var hatC   = o.hatColor === undefined ? clothC : o.hatColor;
+    var pantsC = o.pants === undefined ? 0xd8cfae : o.pants;
+    var gloveC = o.glove === undefined ? skinC : o.glove;
     var clothTex = o.clothTex || 'clothGreen';
-    var hairTex = o.hairTex || 'hairBrown';
-    var bootTex = o.bootTex || 'leather';
+    var hairTex  = o.hairTex || 'hairBrown';
+    var bootTex  = o.bootTex || 'leather';
+    var skinTex  = o.skinTex || 'skin';
 
-    function hexcol(mb, hex) { mb.setColorHex(hex); return mb; }
+    var SIDES = o.lowPoly ? 6 : 8;
+
+    /* one face texture per look, cached by key */
+    var faceKey = o.faceKey || ('f' + skinC.toString(16) + '_' + (o.faceStyle || 'normal') +
+      '_' + ((o.eyeColor === undefined ? 0x2f5a8a : o.eyeColor).toString(16)) + '_' + hairC.toString(16));
+    var faceMat = (LZ.assets && LZ.assets.ensureFace) ? LZ.assets.ensureFace(faceKey, {
+      skin: skinC,
+      eye: o.eyeColor === undefined ? 0x2f5a8a : o.eyeColor,
+      brow: hairC,
+      mouth: o.mouthColor === undefined ? 0x8a4a44 : o.mouthColor,
+      style: o.faceStyle || 'normal',
+      blush: o.blush, marks: o.faceMarks, seed: (skinC & 255) + 3
+    }) : skinTex;
+
+    /* the plain-skin swatch in the face texture's top-left corner */
+    var PL = 0.012;
+    function plainUV() { return [PL * Math.random() * 0.2, PL * 0.5]; }
 
     var def = [];
     def.push({ name: 'root' });
 
-    /* ---- hips: pelvis + tunic skirt ---- */
+    /* ---------------- hips + tunic skirt ---------------- */
     def.push({
-      name: 'hips', parent: 'root', offset: [0, P.hip * s, 0], mat: clothTex,
+      name: 'hips', parent: 'root', offset: [0, B.hip * s, 0], mat: clothTex,
       build: function (mb) {
-        hexcol(mb, clothC);
-        mb.taper(0, -0.10 * s, 0, 0.28 * W * s, 0.19 * W * s, 0.30 * W * s, 0.20 * W * s, 0.12 * s, 0, 0, 3.2);
+        mb.setColorHex(clothC);
+        mb.tube([
+          { x: 0, y: -0.10 * s, z: 0, rx: B.waist * 1.02 * s, rz: B.waist * 0.80 * s },
+          { x: 0, y: -0.02 * s, z: 0, rx: B.waist * 1.06 * s, rz: B.waist * 0.82 * s },
+          { x: 0, y: 0.04 * s, z: 0, rx: B.waist * 0.98 * s, rz: B.waist * 0.78 * s }
+        ], SIDES, { u: 1, v: 3 });
         if (o.skirt !== false) {
-          hexcol(mb, darkC);
-          /* flared tunic hem: the silhouette that reads as "Hylian" */
-          mb.taper(0, -0.26 * s, 0, 0.38 * W * s, 0.28 * W * s, 0.30 * W * s, 0.21 * W * s, 0.18 * s, 0, 0, 3.0);
+          /* the flared hem is the whole silhouette; it must be a cone */
+          mb.setColorHex(darkC);
+          mb.tube([
+            { x: 0, y: -0.30 * s, z: 0, rx: B.skirt * s, rz: B.skirt * 0.80 * s },
+            { x: 0, y: -0.20 * s, z: 0, rx: B.skirt * 0.86 * s, rz: B.skirt * 0.70 * s },
+            { x: 0, y: -0.08 * s, z: 0, rx: B.waist * 1.04 * s, rz: B.waist * 0.84 * s }
+          ], SIDES, { u: 1, v: 2, capEnd: false });
         }
-        hexcol(mb, trimC);
-        mb.box(0, 0.015 * s, 0, 0.315 * W * s, 0.045 * s, 0.215 * W * s, 3.0);
+        mb.setColorHex(trimC);
+        mb.tube([
+          { x: 0, y: 0.005 * s, z: 0, rx: B.waist * 1.10 * s, rz: B.waist * 0.88 * s },
+          { x: 0, y: 0.05 * s, z: 0, rx: B.waist * 1.10 * s, rz: B.waist * 0.88 * s }
+        ], SIDES, { u: 1, v: 2, capStart: false, capEnd: false });
       }
     });
 
-    /* ---- torso ---- */
+    /* ---------------- torso ---------------- */
     def.push({
-      name: 'torso', parent: 'hips', offset: [0, 0.02 * s, 0], mat: clothTex,
-      rest: build === 'old' ? [16, 0, 0] : [0, 0, 0],
+      name: 'torso', parent: 'hips', offset: [0, 0.045 * s, 0], mat: clothTex,
+      rest: build === 'old' ? [15, 0, 0] : [0, 0, 0],
       build: function (mb) {
-        hexcol(mb, clothC);
-        mb.taper(0, 0, 0, 0.30 * W * s, 0.19 * W * s, 0.345 * W * s, 0.205 * W * s, P.torso * s, 0, 0, 2.6);
+        mb.setColorHex(clothC);
+        mb.tube([
+          { x: 0, y: 0, z: 0, rx: B.waist * s, rz: B.waist * 0.80 * s },
+          { x: 0, y: B.torso * 0.35 * s, z: 0, rx: B.chest * 0.94 * s, rz: B.chest * 0.72 * s },
+          { x: 0, y: B.torso * 0.72 * s, z: 0, rx: B.chest * s, rz: B.chest * 0.76 * s },
+          { x: 0, y: B.torso * s, z: 0, rx: B.chest * 0.82 * s, rz: B.chest * 0.64 * s }
+        ], SIDES, { u: 1, v: 2 });
+        /* shoulder caps so the arms grow out of something */
+        mb.setColorHex(darkC);
+        for (var sd = -1; sd <= 1; sd += 2) {
+          mb.ovoid(sd * B.shoulderX * s, B.torso * 0.88 * s, 0,
+            B.armR * 1.5 * s, B.armR * 1.4 * s, B.armR * 1.5 * s, 7, 5);
+        }
+        /* belt across the waist */
+        mb.setColorHex(o.beltColor === undefined ? 0x6b4a2c : o.beltColor);
+        mb.tube([
+          { x: 0, y: B.torso * 0.06 * s, z: 0, rx: B.waist * 1.05 * s, rz: B.waist * 0.85 * s },
+          { x: 0, y: B.torso * 0.17 * s, z: 0, rx: B.waist * 1.07 * s, rz: B.waist * 0.87 * s }
+        ], SIDES, { u: 1, v: 2, capStart: false, capEnd: false });
+        mb.setColorHex(trimC);
+        mb.tube([
+          { x: 0, y: B.torso * 0.055 * s, z: B.waist * 0.80 * s, rx: 0.036 * s, rz: 0.020 * s },
+          { x: 0, y: B.torso * 0.185 * s, z: B.waist * 0.82 * s, rx: 0.036 * s, rz: 0.020 * s }
+        ], 6, { u: 1, v: 2 });
         /* collar */
-        hexcol(mb, darkC);
-        mb.box(0, (P.torso - 0.02) * s, 0, 0.30 * W * s, 0.05 * s, 0.20 * W * s, 3.0);
+        mb.setColorHex(darkC);
+        mb.tube([
+          { x: 0, y: B.torso * 0.96 * s, z: 0, rx: B.chest * 0.86 * s, rz: B.chest * 0.68 * s },
+          { x: 0, y: B.torso * 1.05 * s, z: 0, rx: B.chest * 0.66 * s, rz: B.chest * 0.54 * s }
+        ], SIDES, { u: 1, v: 2, capStart: false });
         if (o.sash) {
-          hexcol(mb, o.sashColor || trimC);
-          mb.taper(0, 0.10 * s, 0.005, 0.10 * W * s, 0.215 * W * s, 0.10 * W * s, 0.215 * W * s, 0.24 * s, 0.05 * s, 0, 3.0);
+          mb.setColorHex(o.sashColor || trimC);
+          mb.tube([
+            { x: -B.chest * 0.5 * s, y: 0.02 * s, z: 0, rx: 0.030 * s, rz: B.chest * 0.80 * s },
+            { x: B.chest * 0.42 * s, y: B.torso * 0.86 * s, z: 0, rx: 0.030 * s, rz: B.chest * 0.74 * s }
+          ], 6, { u: 1, v: 2 });
         }
       }
     });
 
-    /* ---- head ---- */
-    var hr = P.headR * s;
+    /* ---------------- head: ovoid skull + painted face plate ------- */
+    var HX = B.headX * s, HY = B.headY * s, HZ = B.headZ * s;
+    var HCY = HY * 0.96;
     def.push({
-      name: 'head', parent: 'torso', offset: [0, (P.torso + 0.055) * s, 0], mat: skinTex,
+      name: 'head', parent: 'torso', offset: [0, (B.torso + 0.03) * s, 0], mat: faceMat,
       build: function (mb) {
-        hexcol(mb, skinC);
+        mb.setColorHex(0xffffff);
         /* neck */
-        mb.cylinder(0, -0.07 * s, 0, 0.055 * s, 0.06 * s, 0.08 * s, 6, false, 4);
-        /* skull: slightly tapered box reads better than a sphere at this size */
-        mb.taper(0, -0.01 * s, 0, hr * 1.72, hr * 1.62, hr * 1.80, hr * 1.66, hr * 1.05, 0, 0, 3.2);
-        mb.taper(0, (hr * 1.04) * s / s, 0, hr * 1.80, hr * 1.66, hr * 1.30, hr * 1.20, hr * 0.42, 0, -0.006 * s, 3.2);
-        /* pointed Hylian ears */
-        hexcol(mb, skinC);
-        for (var side = -1; side <= 1; side += 2) {
-          mb.taper(side * hr * 0.92, hr * 0.30, -0.01 * s,
-            0.035 * s, 0.075 * s, 0.02 * s, 0.03 * s, 0.16 * s, side * 0.045 * s, -0.03 * s, 4.0);
-        }
-        /* nose */
-        mb.taper(0, hr * 0.24, hr * 0.86, 0.05 * s, 0.05 * s, 0.03 * s, 0.05 * s, 0.06 * s, 0, 0.02 * s, 4.0);
-        /* eyes: dark inset quads on the face plane */
-        var ez = hr * 0.90;
-        for (var e = -1; e <= 1; e += 2) {
-          hexcol(mb, 0xf4f2ee);
-          mb.box(e * hr * 0.44, hr * 0.50, ez, 0.075 * s, 0.075 * s, 0.012 * s, 4.0);
-          hexcol(mb, o.eyeColor === undefined ? 0x243a52 : o.eyeColor);
-          mb.box(e * hr * 0.44, hr * 0.48, ez + 0.008 * s, 0.036 * s, 0.052 * s, 0.012 * s, 4.0);
-          /* brow */
-          hexcol(mb, hairC);
-          mb.box(e * hr * 0.46, hr * 0.76, ez, 0.09 * s, 0.022 * s, 0.012 * s, 4.0);
-        }
-        if (o.mouth !== false) {
-          hexcol(mb, 0x8a4a44);
-          mb.box(0, -hr * 0.14, ez, 0.075 * s, 0.018 * s, 0.010 * s, 4.0);
-        }
-        if (o.beard) {
-          hexcol(mb, o.beardColor === undefined ? hairC : o.beardColor);
-          mb.taper(0, -hr * 0.62, hr * 0.30, 0.20 * s, 0.16 * s, 0.10 * s, 0.09 * s, 0.22 * s, 0, 0.02 * s, 3.0);
-        }
-      }
-    });
-
-    /* ---- hair / headgear ---- */
-    var style = o.hairStyle || 'short';
-    def.push({
-      name: 'hair', parent: 'head', offset: [0, 0, 0], mat: (o.hat === 'cap' || o.hat === 'hood') ? clothTex : hairTex,
-      build: function (mb) {
-        if (o.hat === 'cap') {
-          hexcol(mb, hatC);
-          /* skullcap */
-          mb.taper(0, hr * 0.72, 0, hr * 1.86, hr * 1.72, hr * 1.5, hr * 1.4, hr * 0.46, 0, 0, 3.0);
-          /* long trailing point, the single most recognisable silhouette cue */
-          var seg = 5, px = 0, py = hr * 1.15, pz = 0, w = hr * 1.35;
-          for (var i = 0; i < seg; i++) {
-            var nw = w * (1 - (i + 1) / (seg + 0.6));
-            mb.taper(px, py, pz, w, w * 0.85, nw, nw * 0.85, hr * 0.62,
-              0, -hr * 0.66, 3.0);
-            py += hr * 0.30; pz -= hr * 0.66; w = nw;
+        mb.tube([
+          { x: 0, y: -0.05 * s, z: 0, r: B.waist * 0.42 * s },
+          { x: 0, y: HCY - HY * 0.72, z: 0, r: B.waist * 0.40 * s }
+        ], 6, { u: PL, v: PL, capStart: false, capEnd: false });
+        /* skull: every vertex samples the plain corner of the face tile */
+        mb.ovoid(0, HCY, 0, HX, HY, HZ, 10, 8, {
+          uv: function () { return [PL * 0.5, PL * 0.5]; }
+        });
+        /* The face is a shallow polar disc pressed onto the front of the
+           skull. A disc (not a square patch) means its outline follows
+           the head and there is no visible plate edge. */
+        var RINGS = 4, SEG = 12;
+        var fr = Math.min(HX, HY) * 0.92;
+        var centreIdx = mb.vert(0, HCY, HZ * 1.02, 0, 0, 1, 0.5, 0.5);
+        var prev = null;
+        for (var ri = 1; ri <= RINGS; ri++) {
+          var rad = fr * (ri / RINGS);
+          var row = [];
+          for (var si = 0; si <= SEG; si++) {
+            var ang = si / SEG * Math.PI * 2;
+            var lx = Math.cos(ang) * rad;
+            var ly = Math.sin(ang) * rad;
+            var kk = 1 - (lx / HX) * (lx / HX) - (ly / HY) * (ly / HY);
+            var lz = Math.sqrt(Math.max(0.05, kk)) * HZ * 1.018;
+            var nx = lx / (HX * HX), ny = ly / (HY * HY), nz = lz / (HZ * HZ);
+            var nl = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
+            /* map the face tile across the disc, features upright */
+            var u = 0.5 + lx / (fr * 2.02);
+            var v = 0.5 - ly / (fr * 2.02);
+            row.push(mb.vert(lx, HCY + ly, lz, nx / nl, ny / nl, nz / nl, u, v));
           }
-        } else if (o.hat === 'hood') {
-          hexcol(mb, hatC);
-          mb.taper(0, hr * 0.30, -hr * 0.10, hr * 2.05, hr * 2.0, hr * 1.2, hr * 1.2, hr * 1.4, 0, -hr * 0.2, 3.0);
-        } else if (o.hat === 'turban') {
-          hexcol(mb, hatC);
-          mb.cylinder(0, hr * 0.75, 0, hr * 1.5, hr * 1.35, hr * 0.55, 8, true, 3.0);
-          mb.cylinder(0, hr * 1.20, 0, hr * 1.2, hr * 0.7, hr * 0.35, 8, true, 3.0);
-        } else if (o.hat === 'crown') {
-          hexcol(mb, 0xd8b850);
-          mb.cylinder(0, hr * 0.95, 0, hr * 1.55, hr * 1.6, hr * 0.30, 8, true, 3.0);
-        }
-        if (o.hat !== 'hood') {
-          hexcol(mb, hairC);
-          if (style === 'short' || style === 'long') {
-            mb.taper(0, hr * 0.55, -hr * 0.05, hr * 1.90, hr * 1.86, hr * 1.55, hr * 1.5, hr * 0.62, 0, 0, 3.2);
-            /* fringe */
-            mb.box(0, hr * 0.62, hr * 0.80, hr * 1.7, hr * 0.5, hr * 0.28, 3.2);
-            /* sides */
-            for (var sd = -1; sd <= 1; sd += 2) {
-              mb.taper(sd * hr * 0.86, -hr * 0.10, -hr * 0.15, 0.05 * s, hr * 1.5, 0.045 * s, hr * 1.0, hr * 0.75, 0, 0, 3.2);
+          if (ri === 1) {
+            for (var q = 0; q < SEG; q++) mb.tri(centreIdx, row[q], row[q + 1]);
+          } else {
+            for (var q2 = 0; q2 < SEG; q2++) {
+              mb.quadIdx(prev[q2], row[q2], row[q2 + 1], prev[q2 + 1]);
             }
           }
-          if (style === 'long') {
-            mb.taper(0, -hr * 0.10, -hr * 0.80, hr * 1.5, 0.07 * s, hr * 1.1, 0.06 * s, -hr * 2.2, 0, 0, 3.0);
-            mb.taper(0, -hr * 2.3, -hr * 0.80, hr * 1.5, 0.07 * s, hr * 1.1, 0.06 * s, hr * 2.2, 0, 0, 3.0);
+          prev = row;
+        }
+        /* pointed Hylian ears: small, swept back, barely wider than the head */
+        for (var sd2 = -1; sd2 <= 1; sd2 += 2) {
+          mb.tube([
+            { x: sd2 * HX * 0.80, y: HCY - HY * 0.10, z: -HZ * 0.02, r: 0.026 * s },
+            { x: sd2 * HX * 1.00, y: HCY + HY * 0.16, z: -HZ * 0.26, r: 0.019 * s },
+            { x: sd2 * HX * 1.14, y: HCY + HY * 0.42, z: -HZ * 0.46, r: 0.005 * s }
+          ], 5, { u: PL, v: PL, capStart: false });
+        }
+      }
+    });
+
+    /* ---------------- hair and headgear ---------------- */
+    var style = o.hairStyle || 'short';
+    def.push({
+      name: 'hair', parent: 'head', offset: [0, 0, 0],
+      mat: (o.hat === 'cap' || o.hat === 'hood') ? clothTex : hairTex,
+      build: function (mb) {
+        if (o.beard) {
+          mb.setColorHex(o.beardColor === undefined ? hairC : o.beardColor);
+          mb.tube([
+            { x: 0, y: HCY - HY * 1.30, z: HZ * 0.16, rx: HX * 0.38, rz: HZ * 0.42 },
+            { x: 0, y: HCY - HY * 0.86, z: HZ * 0.30, rx: HX * 0.72, rz: HZ * 0.66 },
+            { x: 0, y: HCY - HY * 0.42, z: HZ * 0.42, rx: HX * 0.92, rz: HZ * 0.80 }
+          ], SIDES, { u: 1, v: 3, capEnd: false });
+        }
+
+        if (o.hat === 'cap') {
+          mb.setColorHex(hatC);
+          /* the cap hugs the skull, then falls away behind in a long tail */
+          mb.ovoid(0, HCY + HY * 0.18, -HZ * 0.04, HX * 1.08, HY * 0.94, HZ * 1.08, 10, 6, {
+            uv: function (x, y) { return [0.5 + x, 0.5 + y]; }
+          });
+          var rings = [];
+          var px = 0, py = HCY + HY * 0.62, pz = -HZ * 0.55, rr = HX * 0.86;
+          for (var i = 0; i < 7; i++) {
+            rings.push({ x: px, y: py, z: pz, r: rr });
+            py += HY * (0.16 - i * 0.035);
+            pz -= HZ * (0.52 + i * 0.10);
+            rr *= 0.80;
           }
-          if (style === 'bald') { /* nothing */ }
+          mb.tube(rings, SIDES, { u: 1, v: 2 });
+        } else if (o.hat === 'hood') {
+          mb.setColorHex(hatC);
+          mb.ovoid(0, HCY + HY * 0.10, -HZ * 0.16, HX * 1.24, HY * 1.16, HZ * 1.28, 10, 7, {
+            uv: function (x, y) { return [0.5 + x, 0.5 + y]; }
+          });
+        } else if (o.hat === 'turban') {
+          mb.setColorHex(hatC);
+          mb.tube([
+            { x: 0, y: HCY + HY * 0.30, z: 0, rx: HX * 1.10, rz: HZ * 1.14 },
+            { x: 0, y: HCY + HY * 0.70, z: 0, rx: HX * 1.22, rz: HZ * 1.26 },
+            { x: 0, y: HCY + HY * 1.05, z: 0, rx: HX * 0.80, rz: HZ * 0.84 }
+          ], SIDES, { u: 1, v: 3 });
+        } else if (o.hat === 'crown') {
+          mb.setColorHex(0xd8b850);
+          mb.tube([
+            { x: 0, y: HCY + HY * 0.62, z: 0, rx: HX * 1.06, rz: HZ * 1.10 },
+            { x: 0, y: HCY + HY * 0.94, z: 0, rx: HX * 1.02, rz: HZ * 1.06 }
+          ], 8, { u: 1, v: 2, capStart: false, capEnd: false });
+        }
+
+        if (style !== 'bald' && o.hat !== 'hood' && o.hat !== 'cap') {
+          mb.setColorHex(hairC);
+          /* a slightly larger ovoid pushed up and back reads as hair */
+          mb.ovoid(0, HCY + HY * 0.20, -HZ * 0.10, HX * 1.06, HY * 0.94, HZ * 1.08, 10, 6, {
+            uv: function (x, y) { return [0.5 + x * 3, 0.5 + y * 3]; }
+          });
+          /* fringe across the brow */
+          mb.tube([
+            { x: 0, y: HCY + HY * 0.60, z: HZ * 0.55, rx: HX * 0.94, rz: HZ * 0.46 },
+            { x: 0, y: HCY + HY * 0.30, z: HZ * 0.66, rx: HX * 0.86, rz: HZ * 0.40 }
+          ], 8, { u: 1, v: 2 });
+          /* sideburns */
+          for (var sd3 = -1; sd3 <= 1; sd3 += 2) {
+            mb.tube([
+              { x: sd3 * HX * 0.88, y: HCY + HY * 0.35, z: -HZ * 0.05, r: 0.040 * s },
+              { x: sd3 * HX * 0.94, y: HCY - HY * 0.55, z: -HZ * 0.05, r: 0.030 * s }
+            ], 5, { u: 1, v: 2 });
+          }
+          if (style === 'long') {
+            mb.tube([
+              { x: 0, y: HCY + HY * 0.40, z: -HZ * 0.95, rx: HX * 0.90, rz: 0.045 * s },
+              { x: 0, y: HCY - HY * 1.40, z: -HZ * 1.05, rx: HX * 0.78, rz: 0.040 * s },
+              { x: 0, y: HCY - HY * 2.40, z: -HZ * 0.95, rx: HX * 0.52, rz: 0.032 * s }
+            ], 6, { u: 1, v: 2 });
+          }
           if (style === 'ponytail') {
-            mb.taper(0, hr * 0.55, -hr * 0.05, hr * 1.90, hr * 1.86, hr * 1.55, hr * 1.5, hr * 0.62, 0, 0, 3.2);
-            mb.taper(0, hr * 0.30, -hr * 1.0, 0.10 * s, 0.10 * s, 0.06 * s, 0.06 * s, -hr * 2.0, 0, -hr * 0.4, 3.0);
+            mb.tube([
+              { x: 0, y: HCY + HY * 0.30, z: -HZ * 1.00, r: 0.055 * s },
+              { x: 0, y: HCY - HY * 0.60, z: -HZ * 1.45, r: 0.042 * s },
+              { x: 0, y: HCY - HY * 1.50, z: -HZ * 1.30, r: 0.018 * s }
+            ], 6, { u: 1, v: 2 });
           }
         }
       }
     });
 
-    /* ---- arms ---- */
+    /* ---------------- arms ---------------- */
     function armBones(side, sname, hname) {
       def.push({
         name: sname, parent: 'torso',
-        offset: [side * P.shoulder * W * s, (P.torso - 0.045) * s, 0],
-        rest: [0, 0, side * -7], mat: clothTex,
+        offset: [side * B.shoulderX * s, B.torso * 0.88 * s, 0],
+        rest: [0, 0, side * -9], mat: clothTex,
         build: function (mb) {
-          hexcol(mb, clothC);
-          mb.taper(0, -P.arm * s, 0, 0.085 * W * s, 0.085 * W * s, 0.105 * W * s, 0.105 * W * s, P.arm * s, 0, 0, 4.0);
-          hexcol(mb, darkC);
-          mb.box(0, -P.arm * s * 0.98, 0, 0.10 * W * s, 0.035 * s, 0.10 * W * s, 4.0);
+          mb.setColorHex(clothC);
+          /* sleeve */
+          mb.limb(0, -B.arm * 0.62 * s, 0, B.arm * 0.62 * s, B.armR * 0.92 * s, B.armR * 1.12 * s,
+            SIDES, { steps: 2, u: 1, v: 3 });
+          mb.setColorHex(o.sleeveTrim === undefined ? darkC : o.sleeveTrim);
+          mb.tube([
+            { x: 0, y: -B.arm * 0.66 * s, z: 0, r: B.armR * 1.16 * s },
+            { x: 0, y: -B.arm * 0.58 * s, z: 0, r: B.armR * 1.16 * s }
+          ], SIDES, { u: 1, v: 2, capStart: false, capEnd: false });
+          /* undershirt sleeve below the tunic sleeve */
+          mb.setColorHex(o.under === undefined ? gloveC : o.under);
+          mb.limb(0, -B.arm * s, 0, B.arm * 0.42 * s, B.armR * 0.88 * s, B.armR * 1.00 * s,
+            SIDES, { steps: 2, u: 1, v: 3, capEnd: false });
         }
       });
       def.push({
-        name: hname, parent: sname, offset: [0, -P.arm * s, 0], mat: o.gloveTex || skinTex,
+        name: hname, parent: sname, offset: [0, -B.arm * s, 0], mat: o.gloveTex || skinTex,
         build: function (mb) {
-          hexcol(mb, o.glove === undefined ? skinC : o.glove);
-          mb.taper(0, -P.arm * s * 0.92, 0, 0.075 * W * s, 0.075 * W * s, 0.085 * W * s, 0.085 * W * s, P.arm * s * 0.92, 0, 0, 4.0);
-          hexcol(mb, o.glove === undefined ? skinC : o.glove);
-          mb.box(0, -P.arm * s * 1.02, 0, 0.10 * W * s, 0.10 * s, 0.09 * W * s, 4.0);
+          mb.setColorHex(o.under === undefined ? gloveC : o.under);
+          mb.limb(0, -B.fore * 0.62 * s, 0, B.fore * 0.62 * s, B.armR * 0.86 * s, B.armR * 0.94 * s,
+            SIDES, { steps: 2, u: 1, v: 3, capEnd: false });
+          mb.setColorHex(gloveC);
+          mb.limb(0, -B.fore * s, 0, B.fore * 0.44 * s, B.armR * 0.82 * s, B.armR * 0.92 * s,
+            SIDES, { steps: 1, u: 1, v: 3, capEnd: false });
+          /* mitten hand */
+          mb.ovoid(0, -B.fore * 1.06 * s, 0.005 * s,
+            B.armR * 1.16 * s, B.armR * 1.30 * s, B.armR * 1.10 * s, 8, 6);
         }
       });
     }
     armBones(-1, 'shoulderL', 'handL');
     armBones(1, 'shoulderR', 'handR');
 
-    /* ---- legs ---- */
+    /* ---------------- legs ---------------- */
     function legBones(side, tname, sname) {
       def.push({
-        name: tname, parent: 'hips', offset: [side * 0.085 * W * s, -0.10 * s, 0], mat: clothTex,
+        name: tname, parent: 'hips', offset: [side * B.hipX * s, -0.085 * s, 0], mat: clothTex,
         build: function (mb) {
-          hexcol(mb, o.pants === undefined ? darkC : o.pants);
-          mb.taper(0, -P.thigh * s, 0, 0.105 * W * s, 0.11 * W * s, 0.125 * W * s, 0.13 * W * s, P.thigh * s, 0, 0, 4.0);
+          mb.setColorHex(pantsC);
+          mb.limb(0, -B.thigh * s, 0, B.thigh * s, B.legR * 0.80 * s, B.legR * s,
+            SIDES, { steps: 3, u: 1, v: 3, bulge: 0.06 });
         }
       });
       def.push({
-        name: sname, parent: tname, offset: [0, -P.thigh * s, 0], mat: bootTex,
+        name: sname, parent: tname, offset: [0, -B.thigh * s, 0], mat: bootTex,
         build: function (mb) {
-          hexcol(mb, o.pants === undefined ? darkC : o.pants);
-          mb.taper(0, -P.shin * s * 0.45, 0, 0.09 * W * s, 0.095 * W * s, 0.105 * W * s, 0.11 * W * s, P.shin * s * 0.45, 0, 0, 4.0);
-          hexcol(mb, bootC);
-          mb.taper(0, -P.shin * s, 0, 0.115 * W * s, 0.135 * W * s, 0.095 * W * s, 0.10 * W * s, P.shin * s * 0.56, 0, 0, 4.0);
-          /* foot */
-          mb.box(0, -P.shin * s + 0.035 * s, 0.045 * s, 0.125 * W * s, 0.07 * s, 0.22 * s, 4.0);
+          mb.setColorHex(pantsC);
+          mb.limb(0, -B.shin * 0.52 * s, 0, B.shin * 0.52 * s, B.legR * 0.74 * s, B.legR * 0.92 * s,
+            SIDES, { steps: 2, u: 1, v: 3, capStart: false });
+          /* boot: a cuff, an ankle and a foot */
+          mb.setColorHex(bootC);
+          mb.tube([
+            { x: 0, y: -B.shin * s, z: 0, rx: B.legR * 0.94 * s, rz: B.legR * 0.98 * s },
+            { x: 0, y: -B.shin * 0.72 * s, z: 0, rx: B.legR * 0.90 * s, rz: B.legR * 0.94 * s },
+            { x: 0, y: -B.shin * 0.46 * s, z: 0, rx: B.legR * 1.10 * s, rz: B.legR * 1.14 * s },
+            { x: 0, y: -B.shin * 0.40 * s, z: 0, rx: B.legR * 1.02 * s, rz: B.legR * 1.06 * s }
+          ], SIDES, { u: 1, v: 3 });
+          /* the foot, swept forward */
+          mb.tube([
+            { x: 0, y: -B.shin * s, z: -B.foot * 0.22 * s, rx: B.legR * 0.92 * s, rz: B.legR * 0.60 * s },
+            { x: 0, y: -B.shin * 1.02 * s, z: B.foot * 0.34 * s, rx: B.legR * 1.02 * s, rz: B.legR * 0.70 * s },
+            { x: 0, y: -B.shin * 1.04 * s, z: B.foot * 0.72 * s, rx: B.legR * 0.80 * s, rz: B.legR * 0.50 * s }
+          ], SIDES, { u: 1, v: 3 });
         }
       });
     }
     legBones(-1, 'thighL', 'shinL');
     legBones(1, 'thighR', 'shinR');
 
-    /* ---- attachment points ---- */
-    def.push({ name: 'itemR', parent: 'handR', offset: [0, -P.arm * s * 1.02, 0.02 * s], hide: true });
-    def.push({ name: 'itemL', parent: 'handL', offset: [0, -P.arm * s * 1.02, 0.02 * s], hide: true });
-    def.push({ name: 'backAttach', parent: 'torso', offset: [0, P.torso * s * 0.72, -0.13 * W * s], hide: true });
+    /* ---------------- attachment points ---------------- */
+    def.push({ name: 'itemR', parent: 'handR', offset: [0, -B.fore * 1.06 * s, 0.02 * s], hide: true });
+    def.push({ name: 'itemL', parent: 'handL', offset: [0, -B.fore * 1.06 * s, 0.02 * s], hide: true });
+    def.push({ name: 'backAttach', parent: 'torso', offset: [0, B.torso * 0.70 * s, -B.chest * 0.86 * s], hide: true });
 
     if (o.cape) {
       def.push({
-        name: 'cape', parent: 'torso', offset: [0, (P.torso - 0.03) * s, -0.10 * W * s], mat: clothTex,
+        name: 'cape', parent: 'torso', offset: [0, B.torso * 0.92 * s, -B.chest * 0.66 * s], mat: clothTex,
         build: function (mb) {
-          hexcol(mb, o.capeColor === undefined ? darkC : o.capeColor);
-          mb.taper(0, -(P.torso + 0.28) * s, 0, 0.34 * W * s, 0.06 * s, 0.46 * W * s, 0.08 * s, (P.torso + 0.28) * s, 0, -0.06 * s, 2.4);
+          mb.setColorHex(o.capeColor === undefined ? darkC : o.capeColor);
+          mb.tube([
+            { x: 0, y: 0, z: 0, rx: B.chest * 0.86 * s, rz: 0.030 * s },
+            { x: 0, y: -(B.torso + 0.18) * s, z: -0.03 * s, rx: B.chest * 1.10 * s, rz: 0.040 * s },
+            { x: 0, y: -(B.torso + 0.40) * s, z: -0.07 * s, rx: B.chest * 1.26 * s, rz: 0.050 * s }
+          ], 8, { u: 1, v: 2 });
         }
       });
     }
 
-    return { def: def, height: (P.hip + P.torso + 0.30) * s, radius: 0.20 * W * s, proportions: P, scale: s };
+    return {
+      def: def,
+      height: (B.hip + B.torso + 0.03 + HCY + HY) * s,
+      radius: (B.chest * 1.15) * s,
+      proportions: B, scale: s,
+      head: { cy: HCY, hx: HX, hy: HY, hz: HZ }
+    };
   };
 
   /* ---------------------------------------------------------------- */

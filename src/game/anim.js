@@ -93,6 +93,18 @@ var LZ = LZ || {};
     this.skel = skeleton;
     this.clips = clips || {};
     var n = skeleton.bones.length;
+    /* per-instance matrices: skeletons and their meshes are shared between
+       every villager of a given type, so the pose cannot live on the rig */
+    this.world = new Float32Array(n * 16);
+    this.local = new Float32Array(n * 16);
+    this.mView = [];
+    this.wView = [];
+    for (var i = 0; i < n; i++) {
+      this.local.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
+      this.world.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
+      this.mView.push(this.local.subarray(i * 16, i * 16 + 16));
+      this.wView.push(this.world.subarray(i * 16, i * 16 + 16));
+    }
     this.pose = new Float32Array(n * 6);
     this.blendFrom = new Float32Array(n * 6);
     this.clip = null;
@@ -203,12 +215,12 @@ var LZ = LZ || {};
   };
 
   /* compute world matrices for the whole rig */
-  var _tmp = M4.create();
   Animator.prototype.computeMatrices = function (rootMatrix) {
     var bones = this.skel.bones;
     for (var i = 0; i < bones.length; i++) {
       var b = bones[i], o = i * 6;
-      M4.compose(b.local,
+      var L = this.mView[i], W = this.wView[i];
+      M4.compose(L,
         b.offset[0] + this.pose[o + 3],
         b.offset[1] + this.pose[o + 4],
         b.offset[2] + this.pose[o + 5],
@@ -216,9 +228,14 @@ var LZ = LZ || {};
         b.rest[1] * D + this.pose[o + 1],
         b.rest[2] * D + this.pose[o + 2],
         1, 1, 1);
-      if (b.parent < 0) M4.multiply(b.world, rootMatrix, b.local);
-      else M4.multiply(b.world, bones[b.parent].world, b.local);
+      if (b.parent < 0) M4.multiply(W, rootMatrix, L);
+      else M4.multiply(W, this.wView[b.parent], L);
     }
+  };
+  /* world matrix of a bone by name, e.g. the hand that holds the sword */
+  Animator.prototype.boneMatrix = function (name) {
+    var i = this.skel.index[name];
+    return i === undefined ? null : this.wView[i];
   };
 
   /* ---------------- authoring helpers ---------------- */
