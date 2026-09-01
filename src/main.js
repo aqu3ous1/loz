@@ -94,7 +94,7 @@ var LZ = LZ || {};
     if (s.shake) g.cam.addShake(s.shake);
     if (s.title) g.hud.showArea(s.title, s.sub);
     if (s.say) {
-      g.dialogue.say(s.say, { speaker: s.speaker, portrait: s.portrait, style: s.style });
+      g.dialogue.say(s.say, { speaker: s.speaker, style: s.style });
     }
     if (s.cam) {
       var c = s.cam;
@@ -701,22 +701,6 @@ var LZ = LZ || {};
     return [(cx * 0.5 + 0.5) * this.r.width, (1 - (cy * 0.5 + 0.5)) * this.r.height];
   };
 
-  Game.prototype.drawPortrait = function (ui, p, x, y, size) {
-    /* a flat vector face: cheap, consistent, and readable at 40px */
-    var skin = p.skin || 0xe8c49c, cloth = p.cloth || 0x8c5a3c, hair = p.hair || 0x4a3320;
-    function c(hex, a) { return [((hex >> 16) & 255) / 255, ((hex >> 8) & 255) / 255, (hex & 255) / 255, a === undefined ? 1 : a]; }
-    ui.rect(x, y, size, size, c(0x2a3350));
-    ui.rect(x, y + size * 0.62, size, size * 0.38, c(cloth));
-    ui.rect(x + size * 0.18, y + size * 0.16, size * 0.64, size * 0.62, c(skin));
-    ui.rect(x + size * 0.14, y + size * 0.10, size * 0.72, size * 0.20, c(hair));
-    if (p.hat === 'cap') ui.rect(x + size * 0.12, y + size * 0.06, size * 0.76, size * 0.18, c(cloth));
-    /* eyes */
-    ui.rect(x + size * 0.32, y + size * 0.40, size * 0.10, size * 0.10, c(0x2a2a38));
-    ui.rect(x + size * 0.58, y + size * 0.40, size * 0.10, size * 0.10, c(0x2a2a38));
-    ui.rect(x + size * 0.42, y + size * 0.58, size * 0.16, size * 0.05, c(0x8a4a44));
-    if (p.beard) ui.rect(x + size * 0.28, y + size * 0.64, size * 0.44, size * 0.16, c(p.beardColor || 0xd8d4cc));
-    if (p.evil) ui.rect(x + size * 0.30, y + size * 0.38, size * 0.40, size * 0.06, c(0xff8020));
-  };
 
   /* ---------------- title / file select ---------------- */
   Game.prototype.loadTitleScene = function () {

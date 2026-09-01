@@ -219,18 +219,18 @@ var LZ = LZ || {};
       K.torch(ctx, cx, cz + 2.4, { lit: true });
       K.npc(ctx, {
         x: cx + 0.4, z: cz + 1.6, yaw: 0.6, name: 'Caravan Master', palette: 6, build: 'adult',
-        hat: 'turban', hatColor: 0xd8c8a0, skin: 0xc08a5c, portrait: S.PORTRAITS.merchant,
+        hat: 'turban', hatColor: 0xd8c8a0, skin: 0xc08a5c,
         talk: function (gg) {
           if (!gg.inv.flag('gotDuneBottle')) {
             gg.inv.setFlag('gotDuneBottle');
             gg.dialogue.say('You look like a man walking to a funeral he has not\nbeen told about yet.\f'
               + 'Take this. Empty, but an empty bottle out here is\nworth more than a full one anywhere else.',
-              { speaker: 'Caravan Master', portrait: S.PORTRAITS.merchant,
+              { speaker: 'Caravan Master',
                 onDone: function () { gg.giveItem('bottle', 1, { describe: false }); } });
             return;
           }
           gg.dialogue.say('South to Hanman, north to the green country.\fPick one and stop standing in my shade.',
-            { speaker: 'Caravan Master', portrait: S.PORTRAITS.merchant });
+            { speaker: 'Caravan Master' });
         }
       });
 
@@ -428,9 +428,9 @@ var LZ = LZ || {};
         sd.interactRange = 1.6;
         sd.actionLabel = 'Plant';
         sd.castShadow = false;
-        sd.update = function () { };
+        sd.update = function () {};
         sd.draw = function (gg) { gg.effects.pointLight(this.pos[0], this.pos[1] + 0.3, this.pos[2], [0.5, 0.9, 0.4], 1.0); };
-        sd.drawShadow = function () { };
+        sd.drawShadow = function () {};
         sd.act = function (gg) {
           gg.inv.setFlag('grovePlanted');
           gg.audio.sfx('secret');
@@ -520,17 +520,17 @@ var LZ = LZ || {};
       K.npc(ctx, {
         x: -14, z: 20, yaw: -0.6, name: 'Nel of the Shallows', palette: 1, build: 'lanky',
         skin: 0x8ec8dc, cloth: 0x2f6a86, clothDark: 0x1e4a62, hair: 0x2f6a86, hairStyle: 'bald',
-        skinTex: 'scaleBlue', clothTex: 'scaleBlue', portrait: S.PORTRAITS.zora,
+        skinTex: 'scaleBlue', clothTex: 'scaleBlue',
         talk: function (gg) {
           if (gg.inv.medallions['lake']) {
             gg.dialogue.say('The lake sleeps properly again. Thank you.\fCome swim any time. The cold is good for you.',
-              { speaker: 'Nel of the Shallows', portrait: S.PORTRAITS.zora });
+              { speaker: 'Nel of the Shallows' });
             return;
           }
           gg.dialogue.say('Something under the water is singing and it will not\nstop.\f'
             + 'Every fish in the lake has swum to the shallows to\nget away from it.\f'
             + 'The temple door will not open while the lake is\nafraid.',
-            { speaker: 'Nel of the Shallows', portrait: S.PORTRAITS.zora });
+            { speaker: 'Nel of the Shallows' });
         }
       });
 
@@ -626,19 +626,19 @@ var LZ = LZ || {};
 
       K.npc(ctx, {
         x: -8, z: 8, yaw: 1.0, name: 'The Gravekeeper', palette: 5, build: 'lanky',
-        hairStyle: 'long', hair: 0x8a8478, portrait: S.PORTRAITS.keeper,
+        hairStyle: 'long', hair: 0x8a8478,
         talk: function (gg) {
           if (!gg.inv.hasSong('dirgeOfTheSeal')) {
             gg.dialogue.say('You are his. I can see it from here.\f'
               + 'He came up every spring to tend her stone and he\nhummed the same six notes the whole time.\f'
               + 'I listened for forty years. I can give them back\nto you.',
-              { speaker: 'The Gravekeeper', portrait: S.PORTRAITS.keeper,
+              { speaker: 'The Gravekeeper',
                 onDone: function () { gg.giveSong('dirgeOfTheSeal'); gg.inv.setFlag('done_sq_gravekeeper'); } });
             return;
           }
           gg.dialogue.say('Stones have been moving on their own down the east\nrow.\f'
             + 'I do not go down the east row any more.',
-            { speaker: 'The Gravekeeper', portrait: S.PORTRAITS.keeper });
+            { speaker: 'The Gravekeeper' });
         }
       });
 

@@ -301,12 +301,12 @@ var LZ = LZ || {};
       act.dungeon = o.dungeon;
       act.lockKind = o.locked;
       act.doorRef = door;
-      act.update = function () { };
+      act.update = function () {};
       act.draw = function (g) {
         if (door.open) return;
         g.effects.lockIcon(x, y + 1.5, z, o.locked === 'boss');
       };
-      act.drawShadow = function () { };
+      act.drawShadow = function () {};
       act.act = function (g) {
         if (door.open) return;
         if (o.locked === 'boss') {
@@ -367,7 +367,7 @@ var LZ = LZ || {};
       LZ.M4.compose(_gm, x, y + this.offset, z, 0, this.yaw, 0, 1, 1, 1);
       g.r.submit(this.mesh, _gm, g.assets.mat[this.matName]);
     };
-    gate.drawShadow = function () { };
+    gate.drawShadow = function () {};
     gate.setOpen = function (v, g) {
       if (this.open === v) return;
       this.open = v;
@@ -402,13 +402,13 @@ var LZ = LZ || {};
       return b.build(ctx.game.r);
     })();
     cover.matName = o.mat || 'rock';
-    cover.update = function () { };
+    cover.update = function () {};
     var _bw = LZ.M4.create();
     cover.draw = function (g) {
       LZ.M4.compose(_bw, x, y, z, 0, yaw, 0, 1, 1, 1);
       g.r.submit(this.mesh, _bw, g.assets.mat[this.matName]);
     };
-    cover.drawShadow = function () { };
+    cover.drawShadow = function () {};
     holder.cover = cover;
     holder.onBomb = function (g) {
       if (holder.broken) return;

@@ -63,7 +63,6 @@ var LZ = LZ || {};
     this.wanderTimer = Math.random() * 3;
     this.lookAt = o.lookAt !== false;
     this.idleClip = o.idle || 'idle';
-    this.portrait = o.portrait || { skin: (o.pal && PALETTES[o.pal].skin) || 0xe8c49c, cloth: o.cloth || 0x8c5a3c, hair: o.hair || 0x4a3320, hat: o.hat };
     this.solid = true;
     this.talking = false;
     var key = 'npc_' + (o.model || JSON.stringify({
@@ -89,7 +88,7 @@ var LZ = LZ || {};
     var text = this.lines[Math.min(this.lineIndex || 0, this.lines.length - 1)];
     if (this.lines.length > 1) this.lineIndex = Math.min((this.lineIndex || 0) + 1, this.lines.length - 1);
     g.dialogue.say(text, {
-      speaker: this.name, portrait: this.portrait,
+      speaker: this.name,
       onDone: function () { self.talking = false; self.play(self.idleClip, { blend: 0.2 }); }
     });
   };
@@ -218,9 +217,9 @@ var LZ = LZ || {};
   Sign.prototype.act = function (g) {
     g.dialogue.say(this.text, { style: 'wood' });
   };
-  Sign.prototype.update = function () { };
-  Sign.prototype.draw = function () { };
-  Sign.prototype.drawShadow = function () { };
+  Sign.prototype.update = function () {};
+  Sign.prototype.draw = function () {};
+  Sign.prototype.drawShadow = function () {};
 
   /* ---------------------------------------------------------------- */
   /* Pot / liftable                                                    */
@@ -329,7 +328,7 @@ var LZ = LZ || {};
     if (this.drop && Math.random() < 0.42) g.spawnDrop(this.pos[0], this.pos[1] + 0.3, this.pos[2], this.drop);
     return false;
   };
-  GrassClump.prototype.update = function () { };
+  GrassClump.prototype.update = function () {};
   var _gm = M4.create();
   GrassClump.prototype.draw = function (g) {
     var sway = Math.sin(g.time * 1.6 + this.pos[0] * 0.7) * 0.05;
@@ -451,7 +450,7 @@ var LZ = LZ || {};
     g.audio.sfx('door');
     g.goToArea(this.to, this.entry);
   };
-  Door.prototype.update = function () { };
+  Door.prototype.update = function () {};
   var _dm = M4.create();
   Door.prototype.draw = function (g) {
     if (!this.mesh) return;
@@ -461,7 +460,7 @@ var LZ = LZ || {};
       g.effects.lockIcon(this.pos[0], this.pos[1] + 1.4, this.pos[2], this.locked === 'boss');
     }
   };
-  Door.prototype.drawShadow = function () { };
+  Door.prototype.drawShadow = function () {};
 
   /* ---------------------------------------------------------------- */
   /* Switches                                                          */
@@ -632,7 +631,7 @@ var LZ = LZ || {};
     g.effects.flame(this.pos[0], this.pos[1] + this.h + 0.18, this.pos[2], 0.55);
     g.effects.pointLight(this.pos[0], this.pos[1] + this.h, this.pos[2], [1, 0.72, 0.35], 1.9);
   };
-  Torch.prototype.drawShadow = function () { };
+  Torch.prototype.drawShadow = function () {};
 
   /* ---------------------------------------------------------------- */
   /* Climbable surface (ladder / vines)                                */
@@ -653,9 +652,9 @@ var LZ = LZ || {};
     player.startClimb({ x: this.pos[0], z: this.pos[2], yaw: this.yaw + Math.PI, top: this.top, bottom: this.bottom });
     g.audio.sfx('step_wood');
   };
-  Climb.prototype.update = function () { };
-  Climb.prototype.draw = function () { };
-  Climb.prototype.drawShadow = function () { };
+  Climb.prototype.update = function () {};
+  Climb.prototype.draw = function () {};
+  Climb.prototype.drawShadow = function () {};
 
   /* ---------------------------------------------------------------- */
   /* Gossip stone: the hint system                                     */
@@ -685,7 +684,7 @@ var LZ = LZ || {};
     g.dialogue.say((extra ? '' : 'The stone hums, but you cannot make out\nthe words.\f') + text,
       { speaker: 'Gossip Stone', style: 'dark' });
   };
-  HintStone.prototype.update = function () { };
+  HintStone.prototype.update = function () {};
   var _hm = M4.create();
   HintStone.prototype.draw = function (g) {
     M4.compose(_hm, this.pos[0], this.pos[1], this.pos[2], 0, this.yaw, 0, 1, 1, 1);

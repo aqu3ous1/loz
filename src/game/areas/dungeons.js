@@ -165,7 +165,7 @@ var LZ = LZ || {};
         gg.r.submit(this.mesh, m, gg.assets.mat.gemRed);
         gg.effects.pointLight(this.pos[0], this.pos[1] + 0.3, this.pos[2], [1, 0.5, 0.5], 2.0);
       };
-      hc.drawShadow = function () { };
+      hc.drawShadow = function () {};
       hc.act = function (gg) {
         this.removeMe = true;
         gg.giveItem('heartContainer', 1, { fanfare: true });
@@ -330,7 +330,7 @@ var LZ = LZ || {};
       gg.r.submit(this.mesh, m, gg.assets.mat.gemRed);
       gg.effects.pointLight(this.pos[0], this.pos[1] + 0.3, this.pos[2], [1, 0.5, 0.5], 2.0);
     };
-    hc.drawShadow = function () { };
+    hc.drawShadow = function () {};
     hc.act = function (gg) {
       this.removeMe = true;
       gg.giveItem('heartContainer', 1, { fanfare: true });
@@ -652,7 +652,7 @@ var LZ = LZ || {};
             b.box(0, -0.06, 0, 2.8, 0.12, 1.8, 1.4);
             return b.build(g.r);
           })();
-          plank.update = function () { };
+          plank.update = function () {};
           var mm = LZ.M4.create();
           plank.draw = function (gg) {
             if (!gg.player.lensOn) return;
@@ -663,7 +663,7 @@ var LZ = LZ || {};
             mat.depthWrite = false;
             gg.r.submit(this.mesh, mm, mat);
           };
-          plank.drawShadow = function () { };
+          plank.drawShadow = function () {};
         })(bz);
       }
 

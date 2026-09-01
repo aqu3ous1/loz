@@ -73,16 +73,15 @@ var LZ = LZ || {};
         cloth: 0x4a7a52, clothDark: 0x2f5a3a, skin: 0xd8bfa4,
         hair: 0xe4e0d4, hairStyle: 'long', hat: 'none', beard: true, beardColor: 0xe4e0d4,
         idle: 'lie', collide: false, lookAt: false,
-        portrait: S.PORTRAITS.link,
         talk: function (gg) {
           if (!gg.inv.flag('heardLink')) { S.prologue(gg); return; }
           if (!gg.inv.flag('gotRustySword')) {
             gg.dialogue.say('The chest, ' + gg.inv.playerName + '. At the foot of the bed.\fMy hands are done with it.',
-              { speaker: 'Link', portrait: S.PORTRAITS.link });
+              { speaker: 'Link' });
             return;
           }
           gg.dialogue.say('Go on, then.\fI would like the last thing I see to be you\nwalking out of a door.',
-            { speaker: 'Link', portrait: S.PORTRAITS.link });
+            { speaker: 'Link' });
         }
       });
       link.tagName = 'Link';
@@ -177,21 +176,21 @@ var LZ = LZ || {};
       /* grandmother, standing where she always stands */
       K.npc(ctx, {
         x: 2.6, z: -14, yaw: 2.4, name: 'Grandmother', palette: 5,
-        build: 'adult', hair: 0xd8d4cc, hairStyle: 'long', portrait: S.PORTRAITS.gran,
+        build: 'adult', hair: 0xd8d4cc, hairStyle: 'long',
         talk: function (gg) {
           if (!gg.inv.flag('gotRustySword')) {
             gg.dialogue.say('He has been waiting for you since sunrise.\fGo in. Do not make him wait for the part he has\nbeen rehearsing.',
-              { speaker: 'Grandmother', portrait: S.PORTRAITS.gran });
+              { speaker: 'Grandmother' });
           } else if (!gg.inv.visited['stonebell']) {
             gg.dialogue.say('South, then south again. Stonebell first, for the\nsmith.\f'
               + 'And ' + gg.inv.playerName + ' - the sword is not the\npoint. He gave you the sword so you would have a\nreason to come back and show him.',
-              { speaker: 'Grandmother', portrait: S.PORTRAITS.gran });
+              { speaker: 'Grandmother' });
           } else if (gg.inv.flag('heardOfDeath')) {
             gg.dialogue.say('I buried him in the Hollow, beside his wife.\fHe would not want you at the grave yet. He would\nwant you finishing it.',
-              { speaker: 'Grandmother', portrait: S.PORTRAITS.gran });
+              { speaker: 'Grandmother' });
           } else {
             gg.dialogue.say('Eat something before you go. You are all elbows.',
-              { speaker: 'Grandmother', portrait: S.PORTRAITS.gran });
+              { speaker: 'Grandmother' });
           }
         }
       });
@@ -358,7 +357,7 @@ var LZ = LZ || {};
       K.torch(ctx, 0, -2.7, { y: 1.6, h: 0.5, lit: true });
       K.npc(ctx, {
         x: 0.4, z: -1.4, yaw: 0.2, name: 'Doram the Smith', palette: 0, build: 'heavy',
-        beard: true, beardColor: 0x2a2418, hairStyle: 'bald', portrait: S.PORTRAITS.smith,
+        beard: true, beardColor: 0x2a2418, hairStyle: 'bald',
         talk: function (gg, npc) { S.smithOffer(gg, npc); }
       });
       K.sign(ctx, -3.4, 2.6, 'A wall of tongs, every one of them different,\nevery one of them worn smooth.', Math.PI);
@@ -380,7 +379,7 @@ var LZ = LZ || {};
       P.crate(ctx.batch, 2.8, 0, -2.0, { scale: 0.7 });
       K.npc(ctx, {
         x: 0, z: -2.4, yaw: 0, name: 'Bexil', palette: 6, build: 'lanky',
-        hairStyle: 'ponytail', portrait: S.PORTRAITS.conman,
+        hairStyle: 'ponytail',
         talk: function (gg, npc) { S.conmanOffer(gg, npc); }
       });
       K.sign(ctx, -2.6, 1.8, 'A framed certificate. The name on it has been\nscratched out and rewritten.', Math.PI);
@@ -405,7 +404,7 @@ var LZ = LZ || {};
         }
         K.npc(ctx, {
           x: 0, z: -2.2, yaw: 0, name: o.keeper || 'Shopkeeper', palette: o.pal === undefined ? 3 : o.pal,
-          build: 'adult', portrait: S.PORTRAITS.merchant,
+          build: 'adult',
           talk: function (gg) {
             var labels = stock.map(function (s) {
               var d = LZ.Items.ITEMS[s.id];
@@ -423,7 +422,7 @@ var LZ = LZ || {};
                 }
                 gg.audio.sfx('rupee');
                 gg.giveItem(s.id, s.count || 1, { describe: false });
-              }, { speaker: o.keeper || 'Shopkeeper', portrait: S.PORTRAITS.merchant });
+              }, { speaker: o.keeper || 'Shopkeeper' });
           }
         });
       }
@@ -526,23 +525,23 @@ var LZ = LZ || {};
           x: 0, z: -6, yaw: Math.PI, name: 'Genmo', build: 'teen', scale: 1.02,
           cloth: 0x3a2a40, clothDark: 0x180a20, skin: 0xc09878, hair: 0x8a2a1a,
           hairStyle: 'ponytail', clothTex: 'clothPurple', hairTex: 'hairRed',
-          idle: 'laugh', collide: false, lookAt: false, portrait: S.PORTRAITS.genmo,
+          idle: 'laugh', collide: false, lookAt: false,
           interactable: false
         });
         genmo.tagName = 'Genmo';
         var cop1 = K.npc(ctx, {
           x: -2.4, z: -3.4, yaw: -1.0, name: 'Town Guard', build: 'adult', palette: 1,
           cloth: 0x36527e, clothDark: 0x22344e, collide: false, interactable: false,
-          idle: 'idleAlert', portrait: S.PORTRAITS.guard
+          idle: 'idleAlert'
         });
         var cop2 = K.npc(ctx, {
           x: 2.6, z: -3.2, yaw: 1.0, name: 'Town Guard', build: 'adult', palette: 1,
           cloth: 0x36527e, clothDark: 0x22344e, collide: false, interactable: false,
-          idle: 'idleAlert', portrait: S.PORTRAITS.guard
+          idle: 'idleAlert'
         });
         var child = K.npc(ctx, {
           x: -0.6, z: -4.0, yaw: 0.4, name: 'Child', build: 'child', palette: 2,
-          collide: false, interactable: false, idle: 'kneel', portrait: S.PORTRAITS.kid
+          collide: false, interactable: false, idle: 'kneel'
         });
         ctx.trigger({
           x: 0, z: 2.5, r: 4.5, once: true,
@@ -669,18 +668,18 @@ var LZ = LZ || {};
       /* the foreman hands over the mine token */
       K.npc(ctx, {
         x: -4, z: -14, yaw: Math.PI, name: 'Foreman Gask', palette: 0, build: 'heavy',
-        beard: true, beardColor: 0x3a2a1a, portrait: S.PORTRAITS.miner,
+        beard: true, beardColor: 0x3a2a1a,
         talk: function (gg) {
           if (gg.inv.medallions['mine']) {
             gg.dialogue.say('You went down there and you came back up. That is\ntwo things most of my crew could not manage.\f'
               + 'Anything you dig out of the deep seam, I will buy.',
-              { speaker: 'Foreman Gask', portrait: S.PORTRAITS.miner });
+              { speaker: 'Foreman Gask' });
             return;
           }
           if (gg.inv.hasQuest('minerPass')) {
             gg.dialogue.say('Gate\'s yours. Lamps are lit as far as the second\nfall, and after that you are on your own.\f'
               + 'There is a thing down there made of slag and\ntemper. Bring something that goes BANG.',
-              { speaker: 'Foreman Gask', portrait: S.PORTRAITS.miner });
+              { speaker: 'Foreman Gask' });
             return;
           }
           gg.dialogue.ask('You are the one from Farrow? The old man\'s boy?\f'
@@ -692,7 +691,7 @@ var LZ = LZ || {};
               gg.giveItem('minerPass', 1, { describe: false });
               gg.inv.setFlag('haveMineToken');
               gg.hud.toast('Got: Miner\'s Token');
-            }, { speaker: 'Foreman Gask', portrait: S.PORTRAITS.miner });
+            }, { speaker: 'Foreman Gask' });
         }
       });
 

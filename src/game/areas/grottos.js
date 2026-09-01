@@ -289,22 +289,22 @@ var LZ = LZ || {};
     /* the mask collector: trades for the Stone Mask */
     K.npc(ctx, {
       x: 14, z: 30, yaw: 2.6, name: 'Odd Trader', palette: 5, build: 'lanky',
-      hat: 'hood', hatColor: 0x4a3a58, portrait: S.PORTRAITS.merchant,
+      hat: 'hood', hatColor: 0x4a3a58,
       talk: function (gg) {
         if (gg.inv.hasMask('stoneMask')) {
           gg.dialogue.say('Faces, faces. Everyone has one and nobody looks\nat their own.',
-            { speaker: 'Odd Trader', portrait: S.PORTRAITS.merchant });
+            { speaker: 'Odd Trader' });
           return;
         }
         if (!gg.inv.hasMask('gibdoMask') && !gg.inv.hasMask('hareMask')) {
           gg.dialogue.say('I buy faces. Not YOUR face. Faces that are not\nattached to anyone.\f'
             + 'Bring me one and I will show you something better.',
-            { speaker: 'Odd Trader', portrait: S.PORTRAITS.merchant });
+            { speaker: 'Odd Trader' });
           return;
         }
         gg.dialogue.say('There. You have found one. Good.\f'
           + 'Then you should have this, and you should never\ntell me where you wear it.',
-          { speaker: 'Odd Trader', portrait: S.PORTRAITS.merchant,
+          { speaker: 'Odd Trader',
             onDone: function () {
               gg.giveItem('stoneMask', 1, { fanfare: true });
               gg.inv.setFlag('done_sq_masks');
@@ -344,27 +344,27 @@ var LZ = LZ || {};
     var g = ctx.game;
     K.npc(ctx, {
       x: 14, z: 22, yaw: -2.2, name: 'Wind Singer', palette: 5, build: 'adult',
-      hairStyle: 'long', hair: 0xd8d4cc, portrait: S.PORTRAITS.elder,
+      hairStyle: 'long', hair: 0xd8d4cc,
       talk: function (gg) {
         var seen = 0;
         for (var k in gg.inv.visited) if (gg.inv.visited[k]) seen++;
         if (gg.inv.hasSong('windsCall')) {
           gg.dialogue.say('The wind knows where you have been. It is the only\nthing that keeps track.',
-            { speaker: 'Wind Singer', portrait: S.PORTRAITS.elder });
+            { speaker: 'Wind Singer' });
           return;
         }
         if (!gg.inv.hasTool('flute')) {
           gg.dialogue.say('You have no instrument. There is nothing I can\nteach a boy with no instrument.',
-            { speaker: 'Wind Singer', portrait: S.PORTRAITS.elder });
+            { speaker: 'Wind Singer' });
           return;
         }
         if (seen < 4) {
           gg.dialogue.say('Walk further first. A song about going home is\nwasted on someone who has not gone anywhere.\f(' + seen + ' places seen. Four will do.)',
-            { speaker: 'Wind Singer', portrait: S.PORTRAITS.elder });
+            { speaker: 'Wind Singer' });
           return;
         }
         gg.dialogue.say('You have been up and down this kingdom twice now.\fHere. It will save your legs.',
-          { speaker: 'Wind Singer', portrait: S.PORTRAITS.elder,
+          { speaker: 'Wind Singer',
             onDone: function () { gg.giveSong('windsCall'); gg.inv.setFlag('done_sq_songs'); } });
       }
     });
@@ -376,30 +376,29 @@ var LZ = LZ || {};
     K.npc(ctx, {
       x: -16, z: 22, yaw: 1.4, name: 'Amjed the Elder', palette: 6, build: 'adult',
       hat: 'turban', hatColor: 0xd8c8a0, skin: 0xc08a5c, beard: true, beardColor: 0xd8d4cc,
-      portrait: S.PORTRAITS.elder,
       talk: function (gg) {
         if (!gg.inv.hasTool('flute')) {
           gg.dialogue.say('Your great-grandfather left this here forty years\nago and never came back for it.\f'
             + 'I have been dusting it every week since, feeling\nlike a fool. Take it. Let me stop.',
-            { speaker: 'Amjed the Elder', portrait: S.PORTRAITS.elder,
+            { speaker: 'Amjed the Elder',
               onDone: function () { gg.giveItem('flute', 1, { fanfare: true }); } });
           return;
         }
         if (!gg.inv.hasSong('verseOfReturn')) {
           gg.dialogue.say('He played four songs on it and only ever explained\ntwo.\f'
             + 'This one pulls the last little while back into\nplace. He used it constantly. He was very clumsy.',
-            { speaker: 'Amjed the Elder', portrait: S.PORTRAITS.elder,
+            { speaker: 'Amjed the Elder',
               onDone: function () { gg.giveSong('verseOfReturn'); } });
           return;
         }
         if (!gg.inv.hasSong('hymnOfAges')) {
           gg.dialogue.say('And this one. He would only play it in the\nElderwood, and he always came back looking\ntwenty years younger and very sad.',
-            { speaker: 'Amjed the Elder', portrait: S.PORTRAITS.elder,
+            { speaker: 'Amjed the Elder',
               onDone: function () { gg.giveSong('hymnOfAges'); } });
           return;
         }
         gg.dialogue.say('Songs are just instructions somebody wrote down\nwhen they were too tired to explain properly.',
-          { speaker: 'Amjed the Elder', portrait: S.PORTRAITS.elder });
+          { speaker: 'Amjed the Elder' });
       }
     });
   });
@@ -409,11 +408,10 @@ var LZ = LZ || {};
     var g = ctx.game;
     K.npc(ctx, {
       x: 12, z: 12, yaw: -1.2, name: 'Stone Listener', palette: 3, build: 'child',
-      portrait: S.PORTRAITS.kid,
       talk: function (gg) {
         if (gg.inv.hasMask('truthMask')) {
           gg.dialogue.say('The stones like you now. They told me.',
-            { speaker: 'Stone Listener', portrait: S.PORTRAITS.kid });
+            { speaker: 'Stone Listener' });
           return;
         }
         var seen = 0;
@@ -421,11 +419,11 @@ var LZ = LZ || {};
         if (seen < 6) {
           gg.dialogue.say('The grey stones talk but you cannot hear them yet.\f'
             + 'Go and stand in more places. Then come back.\n(' + seen + ' of 6 places.)',
-            { speaker: 'Stone Listener', portrait: S.PORTRAITS.kid });
+            { speaker: 'Stone Listener' });
           return;
         }
         gg.dialogue.say('You have been everywhere. Here.\fNow you can hear them too, and you will wish you\ncould stop.',
-          { speaker: 'Stone Listener', portrait: S.PORTRAITS.kid,
+          { speaker: 'Stone Listener',
             onDone: function () {
               gg.giveItem('truthMask', 1, { fanfare: true });
               gg.inv.setFlag('done_sq_masks');

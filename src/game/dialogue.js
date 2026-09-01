@@ -15,7 +15,6 @@ var LZ = LZ || {};
     this.reveal = 0;
     this.speed = 42;          /* characters per second */
     this.speaker = '';
-    this.portrait = null;
     this.choices = null;
     this.choiceIndex = 0;
     this.onDone = null;
@@ -33,7 +32,6 @@ var LZ = LZ || {};
     if (this.active && !opts.replace) { this.queue.push([text, opts]); return; }
     this.active = true;
     this.speaker = opts.speaker || '';
-    this.portrait = opts.portrait || null;
     this.style = opts.style || 'msg';
     this.pages = String(text).split('\f');
     this.page = 0;
@@ -57,7 +55,7 @@ var LZ = LZ || {};
 
   Dialogue.prototype._layout = function () {
     var ui = this.g.ui;
-    var maxW = this.portrait ? 214 : 268;
+    var maxW = 268;
     this.lines = ui.wrap(this.pages[this.page], maxW, 1);
     this.reveal = 0;
     this.total = this.pages[this.page].replace(/\n/g, '').length;
@@ -148,14 +146,9 @@ var LZ = LZ || {};
     var x = 14, y = H - boxH - 12, w = W - 28;
     ui.panel(x, y, w, boxH, this.style);
 
+    /* Text only. Speaker portraits were tried and cut: they eat a third of
+       a 320-wide box, and the era's dialogue was a name and the words. */
     var tx = x + 9, ty = y + 8;
-    if (this.portrait) {
-      /* portrait plate: a flat colour card with the speaker's palette */
-      ui.rect(x + 7, y + 7, 44, 44, [0.06, 0.07, 0.12, 1]);
-      ui.frame(x + 7, y + 7, 44, 44, 1, [0.7, 0.72, 0.85, 1]);
-      this.g.drawPortrait(ui, this.portrait, x + 9, y + 9, 40);
-      tx = x + 58;
-    }
     if (this.speaker) {
       ui.text(this.speaker, tx, ty, [1.0, 0.88, 0.45, 1]);
       ty += 11;

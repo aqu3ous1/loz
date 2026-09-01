@@ -9,24 +9,6 @@ var LZ = LZ || {};
 
   var S = {};
 
-  /* ---------------- portraits ---------------- */
-  S.PORTRAITS = {
-    link:    { skin: 0xd8bfa4, cloth: 0x4a7a52, hair: 0xe4e0d4, beard: true, beardColor: 0xe4e0d4 },
-    player:  { skin: 0xecc49c, cloth: 0x4aa257, hair: 0x8a5f2a, hat: 'cap' },
-    gran:    { skin: 0xe0c0a0, cloth: 0x7a5a8a, hair: 0xd8d4cc },
-    grandad: { skin: 0xd4b090, cloth: 0x5a6a8a, hair: 0xc8c4bc, beard: true, beardColor: 0xc8c4bc },
-    genmo:   { skin: 0xc09878, cloth: 0x3a2a40, hair: 0x8a2a1a, evil: true },
-    smith:   { skin: 0xb08050, cloth: 0x6a4a2c, hair: 0x2a2418, beard: true, beardColor: 0x2a2418 },
-    conman:  { skin: 0xe8d0b0, cloth: 0x9a6a2a, hair: 0x4a3a20 },
-    guard:   { skin: 0xd8b490, cloth: 0x36527e, hair: 0x3a3028 },
-    kid:     { skin: 0xf0d0b0, cloth: 0xa8483c, hair: 0x6a4a20 },
-    elder:   { skin: 0xd0b494, cloth: 0xd8cdb0, hair: 0xe8e4dc, beard: true, beardColor: 0xe8e4dc },
-    miner:   { skin: 0xb89070, cloth: 0x8a7050, hair: 0x3a2a1a },
-    zora:    { skin: 0x8ec8dc, cloth: 0x2f6a86, hair: 0x2f6a86 },
-    keeper:  { skin: 0xc0b8a8, cloth: 0x3a3444, hair: 0x8a8478 },
-    merchant:{ skin: 0xc89860, cloth: 0xbfa374, hair: 0x2a2418 }
-  };
-
   function name(g) { return g.inv.playerName || 'Rell'; }
 
   /* ---------------------------------------------------------------- */
@@ -47,35 +29,35 @@ var LZ = LZ || {};
       { anim: 'Link', clip: 'lieReach' },
       { sfx: 'blip_low' },
       { say: n + '.... come closer. My eyes are not what\nthey were.',
-        speaker: 'Link', portrait: S.PORTRAITS.link },
+        speaker: 'Link' },
       { cam: { pos: [-1.5, 1.7, 1.2], target: [0, 1.05, -1.0], dur: 1.8 } },
       { say: n + '.... Hyrule has been peaceful for many\nyears now. I\'ve sealed away the powers of darkness\naway for several generations.\f'
            + 'Your family has all become peaceful dwellers of the\nland, and none of them have a single bone in their\nbodies in which they could even hurt a fly.\f'
            + 'But, ' + n + '.... I sense times are changing soon.\f'
            + 'Something is on the verge of escaping confinement\nsoon, and I don\'t know who or what it is.\f'
            + 'It\'s taking all that I have in me even to just\ndetect whatever this malicious force is.',
-        speaker: 'Link', portrait: S.PORTRAITS.link },
+        speaker: 'Link' },
       { shake: 0.12 },
       { say: 'If I were your age, I could take it out.\nBut I\'ve been past my prime for nearly sixty years\nnow...',
-        speaker: 'Link', portrait: S.PORTRAITS.link },
+        speaker: 'Link' },
       { cam: { pos: [1.6, 1.5, 0.6], target: [0, 1.0, -1.0], dur: 2.2 } },
       { say: n + '..... this force that I\'m detecting...\nit seems to be coming from a small desert town in\nGerudo.\f'
            + 'Yes, quite far away from where we are now, but I\ndon\'t like what this forebodes.\f'
            + 'I sense that there\'s something different in you from\nmy other descendants. For whatever reason, they\nfailed to inherit my genes.\f'
            + 'But I think you\'re different. You have always been\ndifferent.\f'
            + 'You\'re the only one who can save us now.',
-        speaker: 'Link', portrait: S.PORTRAITS.link },
+        speaker: 'Link' },
       { anim: 'Link', clip: 'lie' },
       { cam: { pos: [0, 1.9, 3.0], target: [-1.8, 0.6, -1.6], dur: 2.0 } },
       { say: 'But before you start your journey, please check\ninside that chest. It has my old gear in there.\f'
            + 'It won\'t be much use as of now, but take it to a\nproper blacksmith, and it can be just as good as new.\f'
            + 'Only don\'t let some random conman rip you off.',
-        speaker: 'Link', portrait: S.PORTRAITS.link },
+        speaker: 'Link' },
       { cam: { pos: [-1.2, 1.6, 1.4], target: [0, 1.05, -1.0], dur: 1.8 } },
       { anim: 'Link', clip: 'lieReach' },
       { say: 'Well, ' + n + '.... your time has come.\f'
            + 'Make your great grandfather proud and carry on my\nlegacy.',
-        speaker: 'Link', portrait: S.PORTRAITS.link },
+        speaker: 'Link' },
       { anim: 'Link', clip: 'lie' },
       { flag: 'heardLink' },
       { wait: 0.8 },
@@ -101,13 +83,13 @@ var LZ = LZ || {};
       { say: 'A boy about your age is holding a paper twist of\ncandy above his head. A much smaller child is\ncrying at his feet.',
         style: 'dark' },
       { say: 'What? She wasn\'t going to finish it.\fLook at her. Look how small she is.',
-        speaker: 'Genmo', portrait: S.PORTRAITS.genmo },
+        speaker: 'Genmo' },
       { anim: cop1, clip: 'point' },
       { say: 'Hand it back. Now, lad. I have had a long week and\nyou are not going to be the worst part of it.',
-        speaker: 'Town Guard', portrait: S.PORTRAITS.guard },
+        speaker: 'Town Guard' },
       { anim: genmo, clip: 'idleAlert' },
       { say: 'Fine. Fine! Here.\fTake your...',
-        speaker: 'Genmo', portrait: S.PORTRAITS.genmo },
+        speaker: 'Genmo' },
       { wait: 0.6 },
       { sfx: 'dark' },
       { shake: 0.5 },
@@ -116,7 +98,7 @@ var LZ = LZ || {};
           g.particles.emit('dark', genmo.pos[0], genmo.pos[1] + 0.6, genmo.pos[2], 26, 1.2);
         } },
       { say: '...oh.\fOh, that\'s new.',
-        speaker: 'Genmo', portrait: S.PORTRAITS.genmo },
+        speaker: 'Genmo' },
       { cam: { pos: [genmo.pos[0] + 2.5, genmo.pos[1] + 1.6, genmo.pos[2] + 3.6],
                target: [genmo.pos[0], genmo.pos[1] + 1.4, genmo.pos[2]], dur: 1.2 } },
       { anim: genmo, clip: 'cast' },
@@ -136,7 +118,7 @@ var LZ = LZ || {};
       { anim: genmo, clip: 'float' },
       { fn: function () { genmo.flying = true; genmo.gravity = 0; } },
       { say: 'I have never felt like this.\fI have NEVER felt like this.',
-        speaker: 'Genmo', portrait: S.PORTRAITS.genmo },
+        speaker: 'Genmo' },
       { face: genmo, at: 'player' },
       { cam: { pos: [g.player.pos[0] + 1.5, g.player.pos[1] + 1.8, g.player.pos[2] + 2.6],
                target: [genmo.pos[0], genmo.pos[1] + 1.6, genmo.pos[2]], dur: 1.4 } },
@@ -170,18 +152,18 @@ var LZ = LZ || {};
         style: 'dark' },
       { fade: 'in', dur: 0.8 },
       { say: n + '. Oh, ' + n + '.\fHe went in the night. Two days ago now.',
-        speaker: 'Grandmother\'s Letter', portrait: S.PORTRAITS.gran },
+        speaker: 'Grandmother\'s Letter' },
       { say: 'I want you to hear the rest from me and not from\nthe village.\f'
            + 'It was not his age. I have sat with people who went\nof their age and it does not look like that.\f'
            + 'There was a darkness in the room. It came in under\nthe door like water and it did not leave until it\nwas finished.\f'
            + 'He was too feeble to push it back. He knew he would\nbe. He told me so a month ago and made me promise\nnot to tell you.',
-        speaker: 'Grandmother\'s Letter', portrait: S.PORTRAITS.gran },
+        speaker: 'Grandmother\'s Letter' },
       { sfx: 'dark' },
       { shake: 0.2 },
       { say: 'There is one more thing. He left a note on the\nbedside, in a hand I could barely read.\f'
            + 'It says: "THE BOY IN THE SAND. HE DID NOT KNOW\nHE COULD REACH THIS FAR. HE KNOWS NOW."\f'
            + 'Come home when you can, ' + n + '. But do not come\nhome yet.',
-        speaker: 'Grandmother\'s Letter', portrait: S.PORTRAITS.gran },
+        speaker: 'Grandmother\'s Letter' },
       { give: 'lastNote' },
       { flag: 'heardOfDeath' },
       { fn: function () {
@@ -203,7 +185,7 @@ var LZ = LZ || {};
         style: 'dark' },
       { say: 'Ashvale! It\'s Ashvale! The mountain\'s open and\nsomething came out of it!\f'
            + 'There\'s a boy up there. A boy, and he\'s LAUGHING,\nand the rock is moving when he tells it to!',
-        speaker: 'Fleeing Miner', portrait: S.PORTRAITS.miner },
+        speaker: 'Fleeing Miner' },
       { flag: 'heardAshvale' },
       { fn: function () { g.hud.toast('New destination: Ashvale'); } }
     ]);
@@ -220,17 +202,17 @@ var LZ = LZ || {};
                target: [boss.pos[0], boss.pos[1] + 1.0, boss.pos[2]], dur: 1.2 } },
       { anim: boss, clip: 'kneel' },
       { say: 'You... you\'re HIS, aren\'t you.\fThe old man in the green. The one I burned out of\nthe world from four hundred leagues away.',
-        speaker: 'Genmo', portrait: S.PORTRAITS.genmo },
+        speaker: 'Genmo' },
       { say: 'I didn\'t even know what I was doing. I was ANGRY,\nand then he was dead, and it felt like stretching.',
-        speaker: 'Genmo', portrait: S.PORTRAITS.genmo },
+        speaker: 'Genmo' },
       { say: 'You should have seen my face. I laughed for an hour.\fI keep waiting to feel bad about it.',
-        speaker: 'Genmo', portrait: S.PORTRAITS.genmo },
+        speaker: 'Genmo' },
       { sfx: 'dark' },
       { anim: boss, clip: 'float' },
       { say: 'I am not finished. I have barely STARTED.\f'
            + 'Go on, then. Chase me. Kill the things I leave\nbehind me.\f'
            + 'When you finally catch up, I will be so much more\nthan this.',
-        speaker: 'Genmo', portrait: S.PORTRAITS.genmo },
+        speaker: 'Genmo' },
       { sfx: 'warp' },
       { shake: 0.5 },
       { fn: function () {
@@ -254,7 +236,7 @@ var LZ = LZ || {};
       { say: 'The dark goes out of him all at once, the way a\nlamp goes out. What is left is a boy your age, on\nhis knees, looking at his hands.',
         style: 'dark' },
       { say: 'I didn\'t...\fI never asked for any of it. It was just IN me.\fWas it in him too? The first one? Was he just\nsomeone this happened to?',
-        speaker: 'Genmo', portrait: S.PORTRAITS.genmo },
+        speaker: 'Genmo' },
       { say: 'You could answer that. You have carried a dead man\'s\nsword across a whole country to be standing here.\f'
            + 'You know exactly how much of a person is their\nblood, and how much is what they do about it.',
         style: 'dark' },
@@ -281,13 +263,13 @@ var LZ = LZ || {};
     if (inv.flag('swordReforged')) {
       g.dialogue.say('She swings well now, doesn\'t she. That steel was\nmade before my grandfather\'s grandfather.\f'
         + 'Whoever forged it the first time knew something I\ndon\'t.',
-        { speaker: 'Doram the Smith', portrait: S.PORTRAITS.smith });
+        { speaker: 'Doram the Smith' });
       return;
     }
     var hasRusty = inv.weapons.some(function (w) { return w.id === 'rustySword'; });
     if (!hasRusty) {
       g.dialogue.say('Bring me something worth the coal and we\'ll talk.',
-        { speaker: 'Doram the Smith', portrait: S.PORTRAITS.smith });
+        { speaker: 'Doram the Smith' });
       return;
     }
     var price = 60;
@@ -300,11 +282,11 @@ var LZ = LZ || {};
         if (!inv.spend(price)) {
           g.audio.sfx('error');
           g.dialogue.say('Come back when your purse is heavier.',
-            { speaker: 'Doram the Smith', portrait: S.PORTRAITS.smith });
+            { speaker: 'Doram the Smith' });
           return;
         }
         S.reforge(g, npc);
-      }, { speaker: 'Doram the Smith', portrait: S.PORTRAITS.smith });
+      }, { speaker: 'Doram the Smith' });
   };
 
   S.reforge = function (g, npc) {
@@ -327,7 +309,7 @@ var LZ = LZ || {};
            + 'Here. The Heirloom Blade.\f'
            + 'I took the rust off and found something underneath\nthat did not want taking off. Whatever that is, it\nis yours now.\f'
            + 'It will not break. Do not test me on that. Just\ntake it and go do whatever has you looking like\nthat.',
-        speaker: 'Doram the Smith', portrait: S.PORTRAITS.smith },
+        speaker: 'Doram the Smith' },
       { fn: function () {
           g.hud.toast('Got: Heirloom Blade');
           g.inv.setFlag('done_sq_conman');
@@ -339,12 +321,12 @@ var LZ = LZ || {};
     var inv = g.inv;
     if (inv.flag('conmanPaid')) {
       g.dialogue.say('Still working on it! Very delicate. Very technical.\f...You haven\'t been to the other smith, have you?',
-        { speaker: 'Bexil', portrait: S.PORTRAITS.conman });
+        { speaker: 'Bexil' });
       return;
     }
     if (inv.flag('swordReforged')) {
       g.dialogue.say('Oh. Oh, you went to Doram.\fWell. Fine. He\'s better. Everyone knows he\'s\nbetter. I have a FAMILY.',
-        { speaker: 'Bexil', portrait: S.PORTRAITS.conman });
+        { speaker: 'Bexil' });
       return;
     }
     g.dialogue.ask('Friend! FRIEND. Is that an antique?\f'
@@ -354,13 +336,13 @@ var LZ = LZ || {};
       function (i) {
         if (i !== 0) {
           g.dialogue.say('Ask around! Ask around, sure. Ask ANYONE.\fJust... maybe not Doram. He and I have history.',
-            { speaker: 'Bexil', portrait: S.PORTRAITS.conman });
+            { speaker: 'Bexil' });
           return;
         }
         if (!inv.spend(200)) {
           g.audio.sfx('error');
           g.dialogue.say('You don\'t have it. That\'s awkward for both of us.',
-            { speaker: 'Bexil', portrait: S.PORTRAITS.conman });
+            { speaker: 'Bexil' });
           return;
         }
         inv.setFlag('conmanPaid');
@@ -368,13 +350,13 @@ var LZ = LZ || {};
         g.dialogue.say('Wonderful! Marvellous! Come back tomorrow!\f'
           + '...He is not going to be here tomorrow.\n'
           + 'You know that. You knew it while you were counting\nthe rupees out.',
-          { speaker: 'Bexil', portrait: S.PORTRAITS.conman,
+          { speaker: 'Bexil',
             onDone: function () {
               g.hud.toast('Your great-grandfather did warn you.');
               npc.hidden = true;
               npc.interactable = false;
             } });
-      }, { speaker: 'Bexil', portrait: S.PORTRAITS.conman });
+      }, { speaker: 'Bexil' });
   };
 
   /* ---------------------------------------------------------------- */
@@ -409,7 +391,7 @@ var LZ = LZ || {};
     };
     var l = lines[which];
     if (!l) return;
-    g.dialogue.say(l[0], l[1] ? { speaker: l[1], portrait: S.PORTRAITS.genmo } : { style: 'dark' });
+    g.dialogue.say(l[0], l[1] ? { speaker: l[1] } : { style: 'dark' });
   };
 
   /* ---------------------------------------------------------------- */
