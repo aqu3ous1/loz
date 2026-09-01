@@ -430,9 +430,13 @@ var LZ = LZ || {};
       return {
         sky: o.sky || 'skyDay',
         fog: o.fog || { color: [0.70, 0.82, 0.94], near: 22, far: 74, density: 1 },
+        /* Daylight in this era is bright and warm with a lot of fill. The
+           tunic green, the thatch yellow and the plaster cream only
+           separate from each other when the key light is strong enough to
+           push the lit faces up near white. */
         light: o.light || {
-          ambient: [0.46, 0.48, 0.54], dir0: [0.42, 0.80, 0.42], col0: [0.66, 0.62, 0.52],
-          dir1: [-0.4, 0.35, -0.6], col1: [0.16, 0.20, 0.28]
+          ambient: [0.50, 0.51, 0.56], dir0: [0.42, 0.80, 0.42], col0: [0.74, 0.70, 0.58],
+          dir1: [-0.4, 0.35, -0.6], col1: [0.18, 0.22, 0.32]
         },
         music: o.music, indoor: o.indoor
       };
@@ -443,7 +447,7 @@ var LZ = LZ || {};
         sky: 'skyDusk',
         fog: { color: [0.78, 0.56, 0.44], near: 16, far: 62, density: 1 },
         light: {
-          ambient: [0.36, 0.32, 0.40], dir0: [0.6, 0.42, -0.5], col0: [0.78, 0.50, 0.34],
+          ambient: [0.44, 0.39, 0.46], dir0: [0.6, 0.42, -0.5], col0: [0.88, 0.58, 0.38],
           dir1: [-0.3, 0.5, 0.4], col1: [0.16, 0.18, 0.34]
         },
         music: o.music
@@ -467,7 +471,7 @@ var LZ = LZ || {};
         sky: 'skyDesert',
         fog: { color: [0.91, 0.82, 0.63], near: 20, far: 78, density: 1 },
         light: {
-          ambient: [0.56, 0.52, 0.44], dir0: [0.3, 0.88, 0.2], col0: [0.82, 0.74, 0.56],
+          ambient: [0.62, 0.58, 0.48], dir0: [0.3, 0.88, 0.2], col0: [0.92, 0.83, 0.62],
           dir1: [-0.4, 0.3, -0.5], col1: [0.20, 0.18, 0.16]
         },
         music: o.music

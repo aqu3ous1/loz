@@ -249,11 +249,71 @@ var LZ = LZ || {};
       /* the clock tower */
       var tx = 0, tz = -20;
       var ty = w.groundHeight(tx, tz);
+      /* The tower is the town's landmark and was a plain box with a
+         four-sided pyramid on it. It now reads as masonry: a plinth, a
+         shaft that batters inwards, string courses, arched openings on
+         every face, a corbelled cornice and an eight-sided spire. */
       var mb = ctx.batch.mb('stoneblockWarm');
       mb.setColorHex(0xffffff);
-      mb.box(tx, ty + 5.0, tz, 6.4, 10, 6.4, 1.0);
-      mb.box(tx, ty + 10.4, tz, 7.2, 0.8, 7.2, 1.0);
-      mb.taper(tx, ty + 10.8, tz, 6.4, 6.4, 0.6, 0.6, 4.0, 0, 0, 1.0);
+      /* plinth */
+      mb.tube([
+        { y: ty - 0.1, rx: 3.8, rz: 3.8 },
+        { y: ty + 0.5, rx: 3.7, rz: 3.7 },
+        { y: ty + 0.7, rx: 3.4, rz: 3.4 }
+      ], 4, { u: 3, v: 1.4, capStart: false, capEnd: false });
+      /* shaft, battered slightly inwards as real towers are */
+      mb.tube([
+        { y: ty + 0.7, rx: 3.35, rz: 3.35 },
+        { y: ty + 4.2, rx: 3.15, rz: 3.15 },
+        { y: ty + 7.6, rx: 3.00, rz: 3.00 },
+        { y: ty + 9.9, rx: 2.92, rz: 2.92 }
+      ], 4, { u: 3, v: 3, capStart: false, capEnd: false });
+      /* string courses */
+      mb.setColorHex(0xe8dcc0);
+      for (var sc = 0; sc < 2; sc++) {
+        var scy = ty + 4.0 + sc * 3.6;
+        mb.tube([
+          { y: scy, rx: 3.26 - sc * 0.12, rz: 3.26 - sc * 0.12 },
+          { y: scy + 0.34, rx: 3.30 - sc * 0.12, rz: 3.30 - sc * 0.12 },
+          { y: scy + 0.44, rx: 3.18 - sc * 0.12, rz: 3.18 - sc * 0.12 }
+        ], 4, { u: 3, v: 1, capStart: false, capEnd: false });
+      }
+      /* corbelled cornice under the spire */
+      mb.tube([
+        { y: ty + 9.9, rx: 2.92, rz: 2.92 },
+        { y: ty + 10.2, rx: 3.30, rz: 3.30 },
+        { y: ty + 10.7, rx: 3.55, rz: 3.55 },
+        { y: ty + 11.0, rx: 3.40, rz: 3.40 }
+      ], 4, { u: 3, v: 1.6, capStart: false });
+      /* arched openings, two per face, sunk into the shaft */
+      var dk = ctx.batch.mb('stoneblockDark');
+      dk.setColorHex(0x50483c);
+      for (var f = 0; f < 4; f++) {
+        var a = f * Math.PI / 2;
+        var nx = Math.sin(a), nz = Math.cos(a);
+        for (var oi = -1; oi <= 1; oi += 2) {
+          var ox = -nz * oi * 1.05, oz = nx * oi * 1.05;
+          dk.tube([
+            { x: tx + ox + nx * 2.7, y: ty + 6.4, z: tz + oz + nz * 2.7, rx: 0.42, ry: 0.95 },
+            { x: tx + ox + nx * 3.15, y: ty + 6.4, z: tz + oz + nz * 3.15, rx: 0.40, ry: 0.90 }
+          ], 7, { axis: f % 2 ? 'x' : 'z', u: 1, v: 1 });
+        }
+      }
+      /* spire: eight sides, with a finial */
+      var rf = ctx.batch.mb('shingleGrey');
+      rf.setColorHex(0xffffff);
+      rf.tube([
+        { y: ty + 11.0, r: 3.30 },
+        { y: ty + 12.0, r: 2.55 },
+        { y: ty + 13.4, r: 1.55 },
+        { y: ty + 14.6, r: 0.62 },
+        { y: ty + 15.1, r: 0.06 }
+      ], 8, { u: 4, v: 2.4, capStart: false });
+      var gm2 = ctx.batch.mb('gold');
+      gm2.setColorHex(0xffffff);
+      gm2.ovoid(tx, ty + 15.3, tz, 0.20, 0.26, 0.20, 7, 5);
+      gm2.tube([{ x: tx, y: ty + 15.5, z: tz, r: 0.05 },
+                { x: tx, y: ty + 16.1, z: tz, r: 0.02 }], 5);
       ctx.col.add(C.box(tx - 3.2, ty + 5, tz, 0.3, 5, 3.2, {}));
       ctx.col.add(C.box(tx + 3.2, ty + 5, tz, 0.3, 5, 3.2, {}));
       ctx.col.add(C.box(tx, ty + 5, tz - 3.2, 3.2, 5, 0.3, {}));

@@ -108,8 +108,8 @@ var LZ = LZ || {};
       self._t('water', t.water(0x2f6d9a, 41));
       self._t('waterDeep', t.water(0x1c4a72, 47));
       self._t('waterMurk', t.water(0x3d5a3a, 53));
-      self._t('cobble', t.cobble(0x9e9a90, 51));
-      self._t('cobbleDark', t.cobble(0x6e6c70, 59));
+      self._t('cobble', t.cobble(0x8a8478, 51));
+      self._t('cobbleDark', t.cobble(0x60594e, 59));
     });
 
     step('architecture', function () {

@@ -65,9 +65,14 @@ var LZ = LZ || {};
 
     /* display options (mutated by the options menu) */
     this.opt = {
-      scanline: 0.35,
+      scanline: 0.32,
       curvature: 0.0,
-      bleed: 0.25,
+      /* The VI stage on real hardware ran an anti-aliasing filter and then
+         went out over composite, so polygon edges arrived at the TV noticeably
+         soft. Rendering 320x240 with hard pixel edges reads as pixel art
+         rather than as an N64, so the horizontal smear carries a bit more
+         weight than looks right in a still. */
+      bleed: 0.36,
       vignette: 0.22,
       dither: true,
       filter3Point: true,

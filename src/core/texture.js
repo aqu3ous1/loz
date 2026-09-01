@@ -265,7 +265,7 @@ var LZ = LZ || {};
     /* Big flat facets with hard dark cracks between them. Each cell gets one
        band of the ramp, so the surface reads as broken stone rather than as
        a grey cloud. */
-    var r = ramp(tintHex || 0x8c8880, 5, { dark: 0.58, lite: 1.20, cool: 0.20, warm: 0.08 });
+    var r = ramp(tintHex || 0x8c8880, 5, { dark: 0.56, lite: 1.18, cool: 0.08, warm: 0.12 });
     var t = new Tile(32, 32);
     var f = [0, 0];
     var sd = seed || 13;
@@ -330,7 +330,9 @@ var LZ = LZ || {};
   };
   T.cobble = function (tintHex, seed) {
     /* Rounded setts with dark mortar and a lit top edge on each stone. */
-    var r = ramp(tintHex || 0x9a978e, 5, { dark: 0.52, lite: 1.16, cool: 0.22, warm: 0.08 });
+    /* Keep the cool shift small: a strong one turns the mortar violet and
+       the whole street reads as lilac once daylight lands on it. */
+    var r = ramp(tintHex || 0x9a978e, 5, { dark: 0.50, lite: 1.12, cool: 0.07, warm: 0.10 });
     var t = new Tile(32, 32);
     var f = [0, 0];
     var sd = seed || 17;
@@ -453,7 +455,7 @@ var LZ = LZ || {};
   };
   T.stoneblock = function (colHex, seed) {
     /* Dressed masonry: courses of blocks, each a flat band, deep joints. */
-    var r = ramp(colHex || 0x8e8c94, 5, { dark: 0.50, lite: 1.16, cool: 0.22, warm: 0.06 });
+    var r = ramp(colHex || 0x8e8c94, 5, { dark: 0.50, lite: 1.14, cool: 0.09, warm: 0.10 });
     var t = new Tile(32, 32);
     var sd = seed || 121;
     t.each(function (x, y) {
@@ -509,7 +511,7 @@ var LZ = LZ || {};
   };
   T.tilefloor = function (colHex, jointHex, seed) {
     /* Flagstones: a flat face per tile, a lit top-left edge, a dark joint. */
-    var r = ramp(colHex || 0x8e8fa0, 5, { dark: 0.52, lite: 1.16, cool: 0.20, warm: 0.06 });
+    var r = ramp(colHex || 0x8e8fa0, 5, { dark: 0.52, lite: 1.14, cool: 0.10, warm: 0.08 });
     var joint = jointHex === undefined ? r[0] : hex(jointHex);
     var t = new Tile(32, 32);
     var sd = seed || 151;
@@ -553,7 +555,7 @@ var LZ = LZ || {};
     /* Hammered plate: flat bands with a hard highlight streak, plus rivets. */
     var r = ramp(colHex || 0x9aa2ae, 5,
       rust ? { dark: 0.54, lite: 1.14, cool: 0.08, warm: 0.22 }
-           : { dark: 0.46, lite: 1.30, cool: 0.24, warm: 0.06 });
+           : { dark: 0.46, lite: 1.26, cool: 0.10, warm: 0.08 });
     var t = new Tile(32, 32);
     var sd = seed || 131;
     t.each(function (x, y) {
