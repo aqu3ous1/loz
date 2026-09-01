@@ -587,17 +587,50 @@ var LZ = LZ || {};
       /* mine mouth cut into the north wall */
       var mx = -6, mz = -22;
       var my = w.groundHeight(mx, mz);
+      /* The mine mouth. A flat slab of rock here reads as a grey billboard
+         hanging in the fog, so the face is an outcrop of swept stone with a
+         dark adit cut into it and a timber frame holding the roof up. */
+      P.cliff(ctx.batch, mx - 4.2, my, mz - 2.2, 7, 6.4, 6, {
+        mat: 'rockAsh', color: 0xb4aca4, sides: 8, layers: 4, yaw: 0.4, debris: false });
+      P.cliff(ctx.batch, mx + 4.4, my, mz - 2.0, 7.4, 7.0, 6, {
+        mat: 'rockAsh', color: 0xa8a09a, sides: 8, layers: 4, yaw: -0.6, debris: false });
+      P.cliff(ctx.batch, mx, my, mz - 3.4, 8, 7.6, 5.5, {
+        mat: 'rockAsh', color: 0xbdb5ad, sides: 9, layers: 4, yaw: 0.15, debris: false });
       var mb = ctx.batch.mb('rockAsh');
-      mb.setColorHex(0x9a9490);
-      mb.box(mx, my + 3.0, mz - 1.0, 8, 6, 3, 0.9);
+      mb.setColorHex(0xa49c94);
+      /* the lip of rock arching over the opening */
+      mb.tube([
+        { x: mx - 3.2, y: my + 1.2, z: mz + 0.2, ry: 1.5, rz: 1.5 },
+        { x: mx - 1.8, y: my + 2.4, z: mz + 0.1, ry: 1.7, rz: 1.6 },
+        { x: mx, y: my + 3.0, z: mz, ry: 1.8, rz: 1.7 },
+        { x: mx + 1.8, y: my + 2.4, z: mz + 0.1, ry: 1.7, rz: 1.6 },
+        { x: mx + 3.2, y: my + 1.2, z: mz + 0.2, ry: 1.5, rz: 1.5 }
+      ], 8, { axis: 'x' });
+      /* the dark of the shaft itself, so the doorway is a hole not a wall */
+      var dk = ctx.batch.mb('rockDark');
+      dk.setColorHex(0x2c2824);
+      dk.tube([
+        { z: mz + 1.0, x: mx, y: my + 1.0, rx: 1.55, ry: 1.65 },
+        { z: mz - 0.4, x: mx, y: my + 1.0, rx: 1.50, ry: 1.60 },
+        { z: mz - 2.4, x: mx, y: my + 0.9, rx: 1.10, ry: 1.20 },
+        { z: mz - 3.6, x: mx, y: my + 0.8, rx: 0.35, ry: 0.40 }
+      ], 8, { axis: 'z', capStart: false });
       ctx.col.add(C.box(mx - 3.0, my + 3, mz, 1.4, 3, 2, {}));
       ctx.col.add(C.box(mx + 3.0, my + 3, mz, 1.4, 3, 2, {}));
       ctx.col.add(C.box(mx, my + 4.4, mz, 3, 1.6, 2, {}));
       var wm = ctx.batch.mb('planksDark');
-      wm.setColorHex(0xffffff);
-      wm.box(mx - 1.6, my + 1.2, mz + 1.4, 0.3, 2.4, 0.3, 2);
-      wm.box(mx + 1.6, my + 1.2, mz + 1.4, 0.3, 2.4, 0.3, 2);
-      wm.box(mx, my + 2.5, mz + 1.4, 3.6, 0.35, 0.3, 2);
+      wm.setColorHex(0xd8c8a8);
+      /* pit props: rough round timber, braced at the head */
+      wm.tube([{ x: mx - 1.7, y: my, z: mz + 1.3, r: 0.20 },
+               { x: mx - 1.6, y: my + 2.5, z: mz + 1.3, r: 0.17 }], 6, { v: 2 });
+      wm.tube([{ x: mx + 1.7, y: my, z: mz + 1.3, r: 0.20 },
+               { x: mx + 1.6, y: my + 2.5, z: mz + 1.3, r: 0.17 }], 6, { v: 2 });
+      wm.tube([{ x: mx - 2.0, y: my + 2.6, z: mz + 1.3, r: 0.21 },
+               { x: mx + 2.0, y: my + 2.6, z: mz + 1.3, r: 0.21 }], 6, { axis: 'x', v: 2 });
+      wm.tube([{ x: mx - 1.55, y: my + 1.9, z: mz + 1.3, r: 0.11 },
+               { x: mx - 0.9, y: my + 2.5, z: mz + 1.3, r: 0.11 }], 5);
+      wm.tube([{ x: mx + 1.55, y: my + 1.9, z: mz + 1.3, r: 0.11 },
+               { x: mx + 0.9, y: my + 2.5, z: mz + 1.3, r: 0.11 }], 5);
       K.door(ctx, {
         x: mx, z: mz + 1.9, to: 'mine', entry: 'default', label: 'Enter the Mine',
         cond: function (gg) { return gg.inv.hasQuest('minerPass') || gg.inv.medallions['mine']; },

@@ -477,7 +477,7 @@ var LZ = LZ || {};
       o = o || {};
       return {
         sky: 'skyAsh',
-        fog: { color: [0.55, 0.50, 0.47], near: 12, far: 56, density: 1 },
+        fog: { color: [0.58, 0.53, 0.49], near: 14, far: 68, density: 1 },
         light: {
           ambient: [0.34, 0.33, 0.36], dir0: [0.3, 0.7, 0.3], col0: [0.48, 0.44, 0.42],
           dir1: [-0.3, 0.4, -0.5], col1: [0.18, 0.16, 0.20]
