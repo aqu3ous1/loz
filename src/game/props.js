@@ -388,11 +388,11 @@ var LZ = LZ || {};
     trim.box(0, doorH + 0.07, hd - 0.02, doorW + 0.28, 0.14, 0.22, 2.4);
     /* a recessed door panel so the opening is not a black hole */
     trim.setColorHex(o.doorColor === undefined ? 0x6a4526 : o.doorColor);
-    trim.box(0, doorH / 2, hd - 0.16, doorW - 0.06, doorH - 0.06, 0.09, 2.8);
+    trim.box(0, doorH / 2, hd - 0.18, doorW - 0.06, doorH - 0.06, 0.10, 2.8);
     trim.setColorHex(0x3a2a18);
-    trim.box(0, doorH / 2, hd - 0.11, doorW - 0.28, doorH - 0.30, 0.02, 2.8);
+    trim.box(0, doorH / 2, hd - 0.09, doorW - 0.28, doorH - 0.30, 0.04, 2.8);
     trim.setColorHex(0xc8a850);
-    trim.box(doorW * 0.30, doorH * 0.48, hd - 0.10, 0.09, 0.09, 0.05, 2.8);
+    trim.box(doorW * 0.30, doorH * 0.48, hd - 0.04, 0.09, 0.09, 0.06, 2.8);
     trim.setColorHex(o.trimColor === undefined ? 0xffffff : o.trimColor);
     /* Windows. A dark rectangle punched in a wall reads as a hole in the
        model, not a window: what sells it is the frame, a mullion cross, and
@@ -402,18 +402,21 @@ var LZ = LZ || {};
       var lit = o.windowLit === undefined ? 0xc8a468 : o.windowLit;
       for (var s2 = -1; s2 <= 1; s2 += 2) {
         var wxc = s2 * (hw * 0.55);
-        trim.box(wxc, wy, hd - 0.06, 0.78, 0.68, 0.10, 2.4);
-        /* the room behind */
+        /* Everything here stands proud of the wall plane at hd. Detail laid
+           flush with a wall z-fights against it at any distance, which is
+           what made the buildings flicker. */
+        trim.box(wxc, wy, hd + 0.05, 0.78, 0.68, 0.12, 2.4);
+        /* the room behind, set in front of the frame's face */
         trim.setColorHex(lit);
-        trim.box(wxc, wy, hd + 0.02, 0.58, 0.48, 0.02, 2.4);
-        /* mullions */
+        trim.box(wxc, wy, hd + 0.12, 0.58, 0.48, 0.03, 2.4);
+        /* mullions, proud of the pane */
         trim.setColorHex(o.trimColor === undefined ? 0x6a5236 : o.trimColor);
-        trim.box(wxc, wy, hd - 0.03, 0.05, 0.50, 0.06, 2.4);
-        trim.box(wxc, wy, hd - 0.03, 0.60, 0.05, 0.06, 2.4);
+        trim.box(wxc, wy, hd + 0.15, 0.05, 0.50, 0.05, 2.4);
+        trim.box(wxc, wy, hd + 0.15, 0.60, 0.05, 0.05, 2.4);
         /* sill, and a shutter hinged back against the wall */
-        trim.box(wxc, wy - 0.36, hd - 0.10, 0.90, 0.07, 0.18, 2.4);
+        trim.box(wxc, wy - 0.38, hd + 0.10, 0.92, 0.08, 0.22, 2.4);
         trim.setColorHex(o.shutterColor === undefined ? 0x7a5a34 : o.shutterColor);
-        trim.box(wxc + s2 * 0.52, wy, hd - 0.05, 0.18, 0.62, 0.07, 2.4);
+        trim.box(wxc + s2 * 0.54, wy, hd + 0.07, 0.18, 0.64, 0.09, 2.4);
         trim.setColorHex(o.trimColor === undefined ? 0xffffff : o.trimColor);
       }
     }
@@ -427,7 +430,31 @@ var LZ = LZ || {};
     var rh = o.roofH || 1.5;
     var rw = w / 2 + eaves, rd = d / 2 + eaves;
     if (o.roofStyle === 'flat') {
-      roof.box(0, h + 0.14, 0, w + eaves, 0.28, d + eaves, 1.6);
+      /* A flat roof is not a slab on a box. What makes adobe read is the
+         parapet standing proud of the deck, the sunk deck inside it, and a
+         shadow course where the wall meets the roof. */
+      var pw = w / 2 + eaves, pd = d / 2 + eaves;
+      roof.tube([
+        { y: h - 0.06, rx: pw, rz: pd },
+        { y: h + 0.10, rx: pw, rz: pd },
+        { y: h + 0.46, rx: pw * 0.985, rz: pd * 0.985 },
+        { y: h + 0.52, rx: pw * 0.90, rz: pd * 0.90 }
+      ], 4, { u: w * 0.5, v: 1.2, capStart: false, capEnd: false });
+      /* the sunk deck, a shade darker so the parapet reads against it */
+      roof.setColorHex(o.deckColor === undefined ? 0xb4ab98 : o.deckColor);
+      roof.box(0, h + 0.20, 0, (w + eaves) * 0.90, 0.10, (d + eaves) * 0.90, 1.4);
+      roof.setColorHex(o.roofColor === undefined ? 0xffffff : o.roofColor);
+      /* projecting roof beams along the two long sides, as adobe has */
+      roof.setColorHex(o.beamColor === undefined ? 0x8a7250 : o.beamColor);
+      var nb = Math.max(3, Math.round(w / 1.3));
+      for (var bi = 0; bi < nb; bi++) {
+        var bx = -w / 2 + (bi + 0.5) * (w / nb);
+        roof.tube([
+          { x: bx, y: h - 0.02, z: pd - 0.02, r: 0.075 },
+          { x: bx, y: h - 0.02, z: pd + 0.30, r: 0.065 }
+        ], 5, { axis: 'z', u: 1, v: 2 });
+      }
+      roof.setColorHex(o.roofColor === undefined ? 0xffffff : o.roofColor);
     } else if (o.roofStyle === 'hip') {
       roof.taper(0, h, 0, rw * 2, rd * 2, rw * 0.5, rd * 0.5, rh, 0, 0, 1.4);
     } else {

@@ -17,8 +17,15 @@ var LZ = LZ || {};
     this.view = M4.create();
     this.proj = M4.create();
     this.fov = 62 * M.DEG;
-    this.near = 0.16;
-    this.far = 260;
+    /* Depth precision, not clipping, sets these. A 16-bit z-buffer spreads
+       its resolution as near*2^16/d^2, so a 0.16 near plane left roughly a
+       sixth of a unit of slack forty units out -- enough that window frames,
+       door panels and roof trim all fought with the walls behind them and
+       the buildings flickered. Pushing the near plane out multiplies the
+       precision by the same factor, and nothing the camera can reach sits
+       inside half a unit of it. */
+    this.near = 0.55;
+    this.far = 210;
 
     this.yaw = 0;
     this.pitch = 0.30;

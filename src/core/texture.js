@@ -493,13 +493,16 @@ var LZ = LZ || {};
     var t = new Tile(32, 32);
     var sd = seed || 171;
     t.each(function (x, y) {
-      var wob = Math.floor(M.valueNoise2(x * 0.10, 0, sd) * 3);
-      var row = Math.floor((y + wob) / 6);
+      /* Beds of wind-cut stone. The wobble has to be strong and the beds
+         uneven, or a cliff face of this reads as corrugated cardboard. */
+      var wob = Math.floor(M.valueNoise2(x * 0.055, 0, sd) * 7);
+      var yy = y + wob;
+      var row = Math.floor(yy / 5) + Math.floor(M.valueNoise2(x * 0.03, yy * 0.02, sd + 2) * 2);
       var h = M.hash2(row, 0, sd);
       var band = 2 + (h > 0.62 ? 1 : (h < 0.30 ? -1 : 0));
       var c = r[band];
-      if (((y + wob) % 6) === 0) c = r[Math.max(0, band - 2)];
-      if (M.hash2(x >> 1, y >> 1, sd + 5) > 0.94) c = r[Math.min(4, band + 1)];
+      if ((yy % 5) === 0 && h > 0.30) c = r[Math.max(0, band - 2)];
+      if (M.hash2(x >> 1, y >> 1, sd + 5) > 0.93) c = r[Math.min(4, band + 1)];
       t.set(x, y, c[0], c[1], c[2], 255);
     });
     return t.indexed(6);
