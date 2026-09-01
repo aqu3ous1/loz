@@ -108,10 +108,15 @@ same constraints and therefore the same look:
 - A composite-video post pass: scanlines, colour bleed, curvature and vignette,
   all adjustable in the options menu (including off).
 
-Textures are 32×32 and 64×64, posterized, and generated from value noise, Worley
-cells and hand-written pixel routines. Character faces are painted onto a small
-tile and pressed onto the skull as a polar disc, which is how the era got
-expressions without geometry.
+Textures are 32×32, drawn as banded pixel art on short palette ramps and
+median-cut down so no tile exceeds a 4bpp palette — usually four or five
+colours. That is the part people actually recognise: cartridge tiles held a
+handful of colours painted as flat bands, because indexed art could not hold a
+gradient, and a smooth noise field mapped onto a base colour turns to mush at
+320×240 no matter how good the noise is. Characters are dressed by multiplying
+one shared neutral value map by a per-object colour, the way the RDP did.
+Faces are painted onto a small tile and pressed onto the skull as a polar disc,
+which is how the era got expressions without geometry.
 
 ## Running it
 
@@ -133,6 +138,8 @@ node tools/deepplay.js    # load all 31 areas; report draws, tris, fps, errors
 node tools/tour.js        # gameplay screenshots at named stops (STOPS=...)
 node tools/modelshot.js   # pose a character or boss against a fixed camera (RIGS=...)
 node tools/combat.js      # drive real input: hits, damage, bombs, bosses, pickups
+node tools/story.js       # walk the main story chain through its own triggers
+node tools/tex.js         # render every texture at 4x with its colour count (TEX=...)
 ```
 
 Screenshots land in `shots/`. `tools/load.js` evaluates the browser sources in
