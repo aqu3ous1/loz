@@ -696,6 +696,14 @@ var LZ = LZ || {};
     });
     return t.indexed(5);
   };
+  /* A neutral value map for character cloth. The RDP multiplied a shared
+     greyscale detail texture by a per-object primitive colour, which is how
+     one tile dressed a whole cast. Tinting a green texture with a green
+     vertex colour multiplies the hue twice and comes out near-black, which
+     is exactly what was happening to the tunic. */
+  T.clothPlain = function (seed) {
+    return T.cloth(0xdcdcdc, seed || 209);
+  };
   T.leather = function (colHex, seed) {
     var r = ramp(colHex || 0x8a6038, 4, { dark: 0.66, lite: 1.14, cool: 0.14, warm: 0.14 });
     var t = new Tile(32, 32);

@@ -156,6 +156,9 @@ var LZ = LZ || {};
     });
 
     step('creatures', function () {
+      self._t('clothPlain', t.clothPlain(209));
+      self._t('leatherPlain', t.leather(0xd0d0d0, 223));
+      self._t('skinPlain', t.skin(0xf0f0f0, 233));
       self._t('clothGreen', t.cloth(0x2f7a3c, 211));
       self._t('clothDGreen', t.cloth(0x1f5a2c, 212));
       self._t('clothBlue', t.cloth(0x2c4d86, 213));
@@ -220,7 +223,8 @@ var LZ = LZ || {};
         'stoneblockWarm', 'plaster', 'plasterBlue', 'sandstone', 'tileFloor', 'tileWarm',
         'carpet', 'carpetBlue', 'metal', 'metalRust', 'gold', 'chestwood',
         'clothGreen', 'clothDGreen', 'clothBlue', 'clothRed', 'clothWhite', 'clothBrown', 'clothTan',
-        'clothPurple', 'clothBlack', 'leather', 'leatherDark', 'skin', 'skinTan', 'skinPale', 'skinOld',
+        'clothPurple', 'clothBlack', 'clothPlain', 'leather', 'leatherDark', 'leatherPlain',
+        'skin', 'skinTan', 'skinPale', 'skinOld', 'skinPlain',
         'hairBrown', 'hairBlond', 'hairWhite', 'hairRed', 'scaleGreen', 'scaleBlue', 'scaleRed',
         'bone', 'furPurple', 'furGrey', 'evil', 'evilRed', 'evilGold',
         'gemGreen', 'gemBlue', 'gemRed', 'gemPurple', 'petalRed', 'petalPale'];

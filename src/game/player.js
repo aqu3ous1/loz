@@ -75,14 +75,20 @@ var LZ = LZ || {};
     this.trailTimer = 0;
 
     this.setModel(LZ.charModel(game.r, 'player', function () {
+      /* The palette matters as much as the mesh. The tunic is a bright
+         kelly green, the undershirt and leggings are cream, the gauntlets
+         are tan leather, and the hair is dirty blond -- four clearly
+         separated values, so the character stays readable as a silhouette
+         of coloured blocks at 320x240. */
       return LZ.Models.humanoid({
-        build: 'teen', scale: 1.0,
-        skin: 0xf0cba4, cloth: 0x4fae5c, clothDark: 0x2f7440, trim: 0xd8c078,
-        pants: 0xe6ddc0, boots: 0x74502e, beltColor: 0x6b4a2c,
-        hair: 0x9a6a2c, hairStyle: 'short',
-        hat: 'cap', hatColor: 0x4fae5c,
-        under: 0xe6ddc0, glove: 0xf0cba4, gloveTex: 'skin',
-        clothTex: 'clothGreen', eyeColor: 0x2f6aa8
+        build: 'hero', scale: 1.0,
+        skin: 0xf4c9a0, cloth: 0x46b04e, clothDark: 0x2c7c38, trim: 0xe8c65c,
+        pants: 0xeae2cc, boots: 0x7a5230, beltColor: 0x74512c,
+        hair: 0xd8b25a, hairStyle: 'short',
+        hat: 'cap', hatColor: 0x46b04e,
+        under: 0xeae2cc, glove: 0xb4864e, gloveTex: 'leatherPlain',
+        sleeveTrim: 0x2c7c38,
+        clothTex: 'clothPlain', eyeColor: 0x2f6aa8
       });
     }, LZ.Models.getHumanoidClips()));
     this.height = 1.42;

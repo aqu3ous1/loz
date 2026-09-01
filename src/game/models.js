@@ -46,6 +46,13 @@ var LZ = LZ || {};
       teen:  { hip: 0.72, torso: 0.34, waist: 0.115, chest: 0.145, shoulderX: 0.137,
                headX: 0.156, headY: 0.174, headZ: 0.150, arm: 0.215, fore: 0.190, armR: 0.052,
                thigh: 0.262, shin: 0.258, legR: 0.072, hipX: 0.072, skirt: 0.215, foot: 0.185 },
+      /* The hero build is not the adult build. N64 Link is drawn stocky and
+         big-headed -- about five and a half heads tall, with a short torso,
+         a wide flared tunic hem and heavy boots. Slimming him toward real
+         human proportion is exactly what makes him stop reading as Link. */
+      hero:  { hip: 0.74, torso: 0.345, waist: 0.126, chest: 0.158, shoulderX: 0.172,
+               headX: 0.178, headY: 0.196, headZ: 0.172, arm: 0.205, fore: 0.182, armR: 0.054,
+               thigh: 0.250, shin: 0.248, legR: 0.078, hipX: 0.076, skirt: 0.228, foot: 0.200 },
       adult: { hip: 0.86, torso: 0.41, waist: 0.132, chest: 0.170, shoulderX: 0.162,
                headX: 0.158, headY: 0.178, headZ: 0.152, arm: 0.258, fore: 0.228, armR: 0.060,
                thigh: 0.315, shin: 0.310, legR: 0.082, hipX: 0.082, skirt: 0.245, foot: 0.205 },
@@ -70,10 +77,16 @@ var LZ = LZ || {};
     var hatC   = o.hatColor === undefined ? clothC : o.hatColor;
     var pantsC = o.pants === undefined ? 0xd8cfae : o.pants;
     var gloveC = o.glove === undefined ? skinC : o.glove;
-    var clothTex = o.clothTex || 'clothGreen';
-    var hairTex  = o.hairTex || 'hairBrown';
-    var bootTex  = o.bootTex || 'leather';
-    var skinTex  = o.skinTex || 'skin';
+    /* Characters default to neutral value maps. The RDP multiplied one
+       shared greyscale detail tile by a per-object primitive colour, which
+       is how a single tile dressed a whole cast; tinting an already-green
+       cloth texture with a green vertex colour multiplies the hue twice and
+       comes out near-black. Anything that genuinely wants a patterned tile
+       (an aura, a uniform) still passes clothTex explicitly. */
+    var clothTex = o.clothTex || 'clothPlain';
+    var hairTex  = o.hairTex || 'furGrey';
+    var bootTex  = o.bootTex || 'leatherPlain';
+    var skinTex  = o.skinTex || 'skinPlain';
 
     var SIDES = o.lowPoly ? 6 : 8;
 
@@ -147,11 +160,12 @@ var LZ = LZ || {};
           { x: 0, y: B.torso * 0.06 * s, z: 0, rx: B.waist * 1.05 * s, rz: B.waist * 0.85 * s },
           { x: 0, y: B.torso * 0.17 * s, z: 0, rx: B.waist * 1.07 * s, rz: B.waist * 0.87 * s }
         ], SIDES, { u: 1, v: 2, capStart: false, capEnd: false });
+        /* a small square buckle sitting on the strap, not a gold waistband */
         mb.setColorHex(trimC);
         mb.tube([
-          { x: 0, y: B.torso * 0.055 * s, z: B.waist * 0.80 * s, rx: 0.036 * s, rz: 0.020 * s },
-          { x: 0, y: B.torso * 0.185 * s, z: B.waist * 0.82 * s, rx: 0.036 * s, rz: 0.020 * s }
-        ], 6, { u: 1, v: 2 });
+          { z: B.waist * 0.86 * s, y: B.torso * 0.118 * s, rx: 0.042 * s, ry: 0.040 * s },
+          { z: B.waist * 0.94 * s, y: B.torso * 0.118 * s, rx: 0.038 * s, ry: 0.036 * s }
+        ], 4, { axis: 'z', u: 1, v: 2 });
         /* collar */
         mb.setColorHex(darkC);
         mb.tube([
@@ -270,11 +284,16 @@ var LZ = LZ || {};
               { x: sd2 * HX * 1.60, y: HCY + HY * 0.30, z: -HZ * 0.22, rx: 0.006 * s, rz: 0.016 * s }
             ], 5, { u: PL, v: PL, capStart: false });
           } else {
+            /* Hylian ears read as flat blades swept back and up, not as
+               wires: thin in x, tall in y, and wide enough in z to catch
+               light against the cap. */
             mb.tube([
-              { x: sd2 * HX * 0.80, y: HCY - HY * 0.10, z: -HZ * 0.02, r: 0.026 * s },
-              { x: sd2 * HX * 1.00, y: HCY + HY * 0.16, z: -HZ * 0.26, r: 0.019 * s },
-              { x: sd2 * HX * 1.14, y: HCY + HY * 0.42, z: -HZ * 0.46, r: 0.005 * s }
-            ], 5, { u: PL, v: PL, capStart: false });
+              { x: sd2 * HX * 0.74, y: HCY - HY * 0.14, z: -HZ * 0.02, ry: 0.030 * s, rz: 0.034 * s },
+              { x: sd2 * HX * 0.98, y: HCY + HY * 0.08, z: -HZ * 0.16, ry: 0.044 * s, rz: 0.030 * s },
+              { x: sd2 * HX * 1.22, y: HCY + HY * 0.34, z: -HZ * 0.34, ry: 0.036 * s, rz: 0.022 * s },
+              { x: sd2 * HX * 1.42, y: HCY + HY * 0.56, z: -HZ * 0.50, ry: 0.014 * s, rz: 0.010 * s },
+              { x: sd2 * HX * 1.52, y: HCY + HY * 0.68, z: -HZ * 0.58, ry: 0.003 * s, rz: 0.003 * s }
+            ], 5, { axis: 'x', u: PL, v: PL, capStart: false });
           }
         }
       }
@@ -297,19 +316,32 @@ var LZ = LZ || {};
 
         if (o.hat === 'cap') {
           mb.setColorHex(hatC);
-          /* the cap hugs the skull, then falls away behind in a long tail */
-          mb.ovoid(0, HCY + HY * 0.18, -HZ * 0.04, HX * 1.08, HY * 0.94, HZ * 1.08, 10, 6, {
+          /* The cap is a soft nightcap, not a wizard's hat. It sits low over
+             the crown -- the fringe shows beneath it -- and the tail leaves
+             the back of the skull, arcs backwards and then hangs DOWN the
+             spine to below the shoulder blades. An earlier version marched
+             the rings up and back, which built a cone pointing at the sky. */
+          /* The skull cap sits above the brow line: dropped any lower it
+             covers the eyes, and the face tile is the only expression the
+             character has. */
+          mb.ovoid(0, HCY + HY * 0.34, -HZ * 0.06, HX * 1.08, HY * 0.86, HZ * 1.10, 10, 6, {
             uv: function (x, y) { return [0.5 + x, 0.5 + y]; }
           });
-          var rings = [];
-          var px = 0, py = HCY + HY * 0.62, pz = -HZ * 0.55, rr = HX * 0.86;
-          for (var i = 0; i < 7; i++) {
-            rings.push({ x: px, y: py, z: pz, r: rr });
-            py += HY * (0.16 - i * 0.035);
-            pz -= HZ * (0.52 + i * 0.10);
-            rr *= 0.80;
-          }
-          mb.tube(rings, SIDES, { u: 1, v: 2 });
+          /* the brim rolled up around the back and sides only */
+          mb.tube([
+            { x: 0, y: HCY + HY * 0.24, z: -HZ * 0.14, rx: HX * 1.14, rz: HZ * 1.14 },
+            { x: 0, y: HCY + HY * 0.44, z: -HZ * 0.14, rx: HX * 1.12, rz: HZ * 1.12 }
+          ], SIDES, { u: 1, v: 2, capStart: false, capEnd: false });
+          mb.tube([
+            { x: 0, y: HCY + HY * 0.54, z: -HZ * 0.76, rx: HX * 0.62, rz: HZ * 0.70 },
+            { x: 0, y: HCY + HY * 0.30, z: -HZ * 1.34, rx: HX * 0.52, rz: HZ * 0.60 },
+            { x: 0, y: HCY - HY * 0.12, z: -HZ * 1.74, rx: HX * 0.43, rz: HZ * 0.50 },
+            { x: 0, y: HCY - HY * 0.70, z: -HZ * 1.90, rx: HX * 0.35, rz: HZ * 0.41 },
+            { x: 0, y: HCY - HY * 1.34, z: -HZ * 1.82, rx: HX * 0.28, rz: HZ * 0.33 },
+            { x: 0, y: HCY - HY * 1.94, z: -HZ * 1.56, rx: HX * 0.20, rz: HZ * 0.24 },
+            { x: 0, y: HCY - HY * 2.42, z: -HZ * 1.22, rx: HX * 0.11, rz: HZ * 0.14 },
+            { x: 0, y: HCY - HY * 2.70, z: -HZ * 0.96, rx: HX * 0.02, rz: HZ * 0.03 }
+          ], SIDES, { u: 1, v: 2 });
         } else if (o.hat === 'hood') {
           mb.setColorHex(hatC);
           mb.ovoid(0, HCY + HY * 0.10, -HZ * 0.16, HX * 1.24, HY * 1.16, HZ * 1.28, 10, 7, {
@@ -373,33 +405,42 @@ var LZ = LZ || {};
         offset: [side * B.shoulderX * s, B.torso * 0.88 * s, 0],
         rest: [0, 0, side * -9], mat: clothTex,
         build: function (mb) {
+          /* A short tunic cap over the shoulder, then the undershirt sleeve
+             running the length of the upper arm. Reversing these -- a long
+             tunic sleeve with an undershirt cuff -- is what made the arms
+             disappear into the body colour. */
+          mb.setColorHex(o.under === undefined ? gloveC : o.under);
+          mb.limb(0, -B.arm * s, 0, B.arm * s, B.armR * 0.94 * s, B.armR * 0.90 * s,
+            SIDES, { steps: 3, u: 1, v: 3, capEnd: false });
           mb.setColorHex(clothC);
-          /* sleeve */
-          mb.limb(0, -B.arm * 0.62 * s, 0, B.arm * 0.62 * s, B.armR * 0.92 * s, B.armR * 1.12 * s,
-            SIDES, { steps: 2, u: 1, v: 3 });
+          mb.tube([
+            { x: 0, y: 0.02 * s, z: 0, r: B.armR * 1.34 * s },
+            { x: 0, y: -B.arm * 0.14 * s, z: 0, r: B.armR * 1.40 * s },
+            { x: 0, y: -B.arm * 0.30 * s, z: 0, r: B.armR * 1.24 * s },
+            { x: 0, y: -B.arm * 0.36 * s, z: 0, r: B.armR * 1.06 * s }
+          ], SIDES, { u: 1, v: 3, capEnd: false });
           mb.setColorHex(o.sleeveTrim === undefined ? darkC : o.sleeveTrim);
           mb.tube([
-            { x: 0, y: -B.arm * 0.66 * s, z: 0, r: B.armR * 1.16 * s },
-            { x: 0, y: -B.arm * 0.58 * s, z: 0, r: B.armR * 1.16 * s }
+            { x: 0, y: -B.arm * 0.36 * s, z: 0, r: B.armR * 1.08 * s },
+            { x: 0, y: -B.arm * 0.42 * s, z: 0, r: B.armR * 1.06 * s }
           ], SIDES, { u: 1, v: 2, capStart: false, capEnd: false });
-          /* undershirt sleeve below the tunic sleeve */
-          mb.setColorHex(o.under === undefined ? gloveC : o.under);
-          mb.limb(0, -B.arm * s, 0, B.arm * 0.42 * s, B.armR * 0.88 * s, B.armR * 1.00 * s,
-            SIDES, { steps: 2, u: 1, v: 3, capEnd: false });
         }
       });
       def.push({
         name: hname, parent: sname, offset: [0, -B.arm * s, 0], mat: o.gloveTex || skinTex,
         build: function (mb) {
-          mb.setColorHex(o.under === undefined ? gloveC : o.under);
-          mb.limb(0, -B.fore * 0.62 * s, 0, B.fore * 0.62 * s, B.armR * 0.86 * s, B.armR * 0.94 * s,
-            SIDES, { steps: 2, u: 1, v: 3, capEnd: false });
           mb.setColorHex(gloveC);
-          mb.limb(0, -B.fore * s, 0, B.fore * 0.44 * s, B.armR * 0.82 * s, B.armR * 0.92 * s,
-            SIDES, { steps: 1, u: 1, v: 3, capEnd: false });
+          /* the gauntlet: flared at the elbow, snug at the wrist */
+          mb.tube([
+            { x: 0, y: 0.01 * s, z: 0, r: B.armR * 1.16 * s },
+            { x: 0, y: -B.fore * 0.16 * s, z: 0, r: B.armR * 1.02 * s },
+            { x: 0, y: -B.fore * 0.62 * s, z: 0, r: B.armR * 0.88 * s },
+            { x: 0, y: -B.fore * 0.92 * s, z: 0, r: B.armR * 0.84 * s }
+          ], SIDES, { u: 1, v: 3, capEnd: false });
           /* mitten hand */
-          mb.ovoid(0, -B.fore * 1.06 * s, 0.005 * s,
-            B.armR * 1.16 * s, B.armR * 1.30 * s, B.armR * 1.10 * s, 8, 6);
+          mb.setColorHex(o.handColor === undefined ? gloveC : o.handColor);
+          mb.ovoid(0, -B.fore * 1.08 * s, 0.005 * s,
+            B.armR * 1.10 * s, B.armR * 1.26 * s, B.armR * 1.04 * s, 8, 6);
         }
       });
     }
