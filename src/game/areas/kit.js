@@ -429,7 +429,7 @@ var LZ = LZ || {};
       o = o || {};
       return {
         sky: o.sky || 'skyDay',
-        fog: o.fog || { color: [0.76, 0.85, 0.93], near: 20, far: 68, density: 1 },
+        fog: o.fog || { color: [0.70, 0.82, 0.94], near: 22, far: 74, density: 1 },
         light: o.light || {
           ambient: [0.46, 0.48, 0.54], dir0: [0.42, 0.80, 0.42], col0: [0.66, 0.62, 0.52],
           dir1: [-0.4, 0.35, -0.6], col1: [0.16, 0.20, 0.28]

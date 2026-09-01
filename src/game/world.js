@@ -218,10 +218,11 @@ var LZ = LZ || {};
 
         var h00 = f.h[j * f.nx + i], h10 = f.h[j * f.nx + i + 1];
         var h01 = f.h[(j + 1) * f.nx + i], h11 = f.h[(j + 1) * f.nx + i + 1];
-        /* One tile per ~2.7 world units. Tighter than this and a wide field
-           dissolves into pixel noise at distance; looser and the filtering
-           smears it to flat colour. */
-        var us = f.cell / 2.7;
+        /* One 32x32 tile per ~1.35 world units. The tiles are hand-banded
+           pixel art now rather than noise, so they want to be seen at close
+           to their drawn scale: a cobble sett should be a hand's width, not
+           a metre across. Mipmapping handles the distance. */
+        var us = f.cell / 1.35;
 
         /* Corner shades are the material's own, untinted. An earlier version
            pulled minority corners toward their material's tone to fake a

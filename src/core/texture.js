@@ -95,85 +95,207 @@ var LZ = LZ || {};
     return sum / norm;
   }
 
+  /* ------------------------------------------------------------------ */
+  /* Palette ramps                                                       */
+  /*                                                                     */
+  /* The single biggest difference between a procedural texture and a
+     cartridge texture is that the cartridge one has about six colours in
+     it. Artists painted a short ramp by hand and filled shapes with flat
+     bands of it; nothing was a continuous gradient, because 4bpp indexed
+     tiles could not hold one. A noise field mapped smoothly onto a base
+     colour reads as mush at 320x240 no matter how good the noise is.
+     Every texture below therefore builds a ramp and picks a band.        */
+  /* ------------------------------------------------------------------ */
+
+  /* n evenly spaced steps around a base colour. Shadows drift cool and
+     gain saturation, highlights drift warm and lose it -- the same trick a
+     pixel artist uses to stop a ramp looking like a greyscale multiply. */
+  function ramp(baseHex, n, o) {
+    o = o || {};
+    var base = typeof baseHex === 'number' ? hex(baseHex) : baseHex.slice();
+    var dark = o.dark === undefined ? 0.46 : o.dark;
+    var lite = o.lite === undefined ? 1.30 : o.lite;
+    var cool = o.cool === undefined ? 0.16 : o.cool;
+    var warm = o.warm === undefined ? 0.14 : o.warm;
+    n = n || 5;
+    var out = [];
+    var mid = (n - 1) / 2;
+    for (var i = 0; i < n; i++) {
+      var t = mid === 0 ? 0 : (i - mid) / mid;         /* -1 .. +1 */
+      var f = t < 0 ? dark + (1 - dark) * (1 + t) : 1 + (lite - 1) * t;
+      var c = [base[0] * f, base[1] * f, base[2] * f, 255];
+      if (t < 0) {
+        var k = -t * cool;
+        c[2] += (235 - c[2]) * k * 0.9;
+        c[0] -= c[0] * k * 0.55;
+      } else {
+        var k2 = t * warm;
+        c[0] += (255 - c[0]) * k2;
+        c[1] += (250 - c[1]) * k2 * 0.72;
+      }
+      out.push([
+        c[0] < 0 ? 0 : (c[0] > 255 ? 255 : c[0]),
+        c[1] < 0 ? 0 : (c[1] > 255 ? 255 : c[1]),
+        c[2] < 0 ? 0 : (c[2] > 255 ? 255 : c[2]), 255]);
+    }
+    return out;
+  }
+
+  /* snap a 0..1 value to one band of a ramp: the hard edge is the point */
+  function pick(r, v) {
+    var i = Math.floor((v < 0 ? 0 : (v > 1 ? 1 : v)) * r.length);
+    if (i >= r.length) i = r.length - 1;
+    if (i < 0) i = 0;
+    return r[i];
+  }
+
+  /* Median-cut the tile down to n total colours. Authored textures are
+     already short; this is the safety net for the ones that still lean on
+     noise, and it guarantees no tile in the game exceeds a 4bpp palette. */
+  Tile.prototype.indexed = function (n) {
+    n = n || 16;
+    var px = [], i;
+    for (i = 0; i < this.data.length; i += 4) {
+      if (this.data[i + 3] < 8) continue;
+      px.push([this.data[i], this.data[i + 1], this.data[i + 2]]);
+    }
+    if (!px.length) return this;
+    var boxes = [px];
+    while (boxes.length < n) {
+      /* split the box with the widest channel spread */
+      var bi = -1, bspread = -1, bch = 0;
+      for (i = 0; i < boxes.length; i++) {
+        if (boxes[i].length < 2) continue;
+        for (var ch = 0; ch < 3; ch++) {
+          var lo = 255, hi = 0;
+          for (var k = 0; k < boxes[i].length; k++) {
+            var v = boxes[i][k][ch];
+            if (v < lo) lo = v;
+            if (v > hi) hi = v;
+          }
+          if (hi - lo > bspread) { bspread = hi - lo; bi = i; bch = ch; }
+        }
+      }
+      if (bi < 0 || bspread <= 0) break;
+      var box = boxes[bi];
+      box.sort(function (a, b) { return a[bch] - b[bch]; });
+      var mid = box.length >> 1;
+      boxes.splice(bi, 1, box.slice(0, mid), box.slice(mid));
+    }
+    var pal = [];
+    for (i = 0; i < boxes.length; i++) {
+      var r0 = 0, g0 = 0, b0 = 0, m = boxes[i].length;
+      if (!m) continue;
+      for (var j = 0; j < m; j++) { r0 += boxes[i][j][0]; g0 += boxes[i][j][1]; b0 += boxes[i][j][2]; }
+      pal.push([r0 / m, g0 / m, b0 / m]);
+    }
+    for (i = 0; i < this.data.length; i += 4) {
+      if (this.data[i + 3] < 8) continue;
+      var best = 0, bd = 1e9;
+      for (var q = 0; q < pal.length; q++) {
+        var dr = this.data[i] - pal[q][0], dg = this.data[i + 1] - pal[q][1], db = this.data[i + 2] - pal[q][2];
+        var d = dr * dr + dg * dg + db * db;
+        if (d < bd) { bd = d; best = q; }
+      }
+      this.data[i] = pal[best][0] | 0;
+      this.data[i + 1] = pal[best][1] | 0;
+      this.data[i + 2] = pal[best][2] | 0;
+    }
+    return this;
+  };
+
   var T = {};
   T.Tile = Tile;
   T.mixc = mixc; T.shade = shade; T.hex = hex; T.wfbm = wfbm; T.wnoise = wnoise;
+  T.ramp = ramp; T.pick = pick;
 
   /* ================= ground / terrain ================= */
   T.grass = function (base, alt, seed) {
-    base = base || [72, 118, 54]; alt = alt || [104, 152, 70];
-    var t = new Tile(64, 64);
+    /* Four bands of green in big soft patches, plus sparse two-pixel blade
+       marks. The temptation is to add detail; at 320x240 detail is noise,
+       and what actually reads across a whole field is the patch shape. */
+    var g = ramp(base || [86, 132, 58], 4, { dark: 0.66, lite: 1.18, cool: 0.20, warm: 0.10 });
+    var t = new Tile(32, 32);
+    var sd = seed || 1;
     t.each(function (x, y) {
-      var n = wfbm(x, y, 64, 64, 5, 4, seed || 1);
-      var patch = wfbm(x, y, 64, 64, 2, 2, (seed || 1) + 77);
-      var n2 = wnoise(x, y, 64, 64, 32, (seed || 1) + 41);
-      var c = mixc(base, alt, M.saturate(n * 1.25 - 0.05));
-      /* Broad patches keep a big field from reading as one flat colour, but
-         the swing has to stay narrow: brightening past about 1.2 turns an
-         olive green into fluorescent lime once the vertex light lands on it. */
-      c = shade(c, 0.86 + patch * 0.28);
-      c = shade(c, 0.94 + n2 * 0.13);
-      /* blade flecks and bare spots */
-      if (n2 > 0.95) c = mixc(c, [148, 172, 96, 255], 0.42);
-      if (n2 < 0.05) c = shade(c, 0.80);
-      if (patch < 0.16) c = mixc(c, [116, 106, 74, 255], 0.30);
+      var patch = wfbm(x, y, 32, 32, 2, 2, sd);
+      var fine = wnoise(x, y, 32, 32, 8, sd + 41);
+      var v = patch * 0.72 + fine * 0.28;
+      var c = pick(g, v * 1.06 - 0.03);
+      /* Blade clusters: two-pixel vertical dashes of the light band. An
+         earlier version also scattered single dark pixels, which at this
+         tiling read as mould spots on the field rather than as grass. */
+      var bh = M.hash2(x >> 1, (y + 1) >> 1, sd + 7);
+      if (bh > 0.90 && v > 0.30) c = g[3];
       t.set(x, y, c[0], c[1], c[2], 255);
     });
-    return t.posterize();
+    return t.indexed(8);
   };
   T.dirt = function (seed) {
-    var t = new Tile(64, 64);
-    var a = [104, 80, 54], b = [140, 112, 76];
+    var d = ramp(0x8a6a44, 4, { dark: 0.68, lite: 1.16, cool: 0.14, warm: 0.12 });
+    var t = new Tile(32, 32);
+    var sd = seed || 7;
     t.each(function (x, y) {
-      var n = wfbm(x, y, 64, 64, 6, 4, seed || 7);
-      var g = wnoise(x, y, 64, 64, 32, (seed || 7) + 3);
-      var c = mixc(a, b, n);
-      c = shade(c, 0.88 + g * 0.26);
-      if (g > 0.95) c = mixc(c, [86, 76, 70, 255], 0.7);  /* pebbles */
+      var v = wfbm(x, y, 32, 32, 3, 2, sd);
+      var c = pick(d, v);
+      /* pebbles: a two-pixel light blob with a dark pixel under it */
+      var h = M.hash2(x >> 1, y >> 1, sd + 13);
+      if (h > 0.955) c = d[3];
+      else if (h > 0.93) c = d[0];
       t.set(x, y, c[0], c[1], c[2], 255);
     });
-    return t.posterize();
+    return t.indexed(8);
   };
   T.sand = function (seed) {
-    var t = new Tile(64, 64);
-    var a = [196, 168, 112], b = [224, 200, 148];
+    /* Desert sand is almost a flat colour with wind ripples drawn on it.
+       Banding the ripple is what makes it read as sand rather than fog. */
+    var sr = ramp(0xd8bc80, 4, { dark: 0.80, lite: 1.12, cool: 0.10, warm: 0.14 });
+    var t = new Tile(32, 32);
+    var sd = seed || 3;
     t.each(function (x, y) {
-      var ripple = Math.sin((x * 0.55 + wfbm(x, y, 64, 64, 4, 2, seed || 3) * 9) * 1.0) * 0.5 + 0.5;
-      var n = wfbm(x, y, 64, 64, 8, 3, (seed || 3) + 11);
-      var c = mixc(a, b, M.saturate(ripple * 0.55 + n * 0.5));
-      c = shade(c, 0.94 + wnoise(x, y, 64, 64, 32, 5) * 0.14);
+      var warp = wfbm(x, y, 32, 32, 2, 2, sd) * 6;
+      var rip = Math.sin((x * 0.42 + y * 0.18 + warp) * 1.15) * 0.5 + 0.5;
+      var v = 0.30 + rip * 0.52 + wnoise(x, y, 32, 32, 8, sd + 5) * 0.18;
+      var c = pick(sr, v);
       t.set(x, y, c[0], c[1], c[2], 255);
     });
-    return t.posterize();
+    return t.indexed(6);
   };
   T.rock = function (tintHex, seed) {
-    var base = tintHex ? hex(tintHex) : [112, 108, 104];
-    var t = new Tile(64, 64);
+    /* Big flat facets with hard dark cracks between them. Each cell gets one
+       band of the ramp, so the surface reads as broken stone rather than as
+       a grey cloud. */
+    var r = ramp(tintHex || 0x8c8880, 5, { dark: 0.58, lite: 1.20, cool: 0.20, warm: 0.08 });
+    var t = new Tile(32, 32);
     var f = [0, 0];
+    var sd = seed || 13;
     t.each(function (x, y) {
-      var gx = x / 64 * 4.5 + 0.3, gy = y / 64 * 4.5 + 0.7;
-      M.worley2b(gx, gy, seed || 13, f);
+      var gx = x / 32 * 2.6 + 0.3, gy = y / 32 * 2.6 + 0.7;
+      M.worley2b(gx, gy, sd, f);
       var joint = f[1] - f[0];
-      var id = M.worleyCell(gx, gy, seed || 13);
-      var n = wfbm(x, y, 64, 64, 10, 3, (seed || 13) + 17);
-      var face = mixc(base, shade(base, 1.22), id);
-      var c = shade(face, 0.80 + n * 0.34);
-      if (joint < 0.07) c = shade(c, 0.62);          /* crack */
-      else if (joint < 0.14) c = shade(c, 0.84);
+      var id = M.worleyCell(gx, gy, sd);
+      var band = Math.floor(id * 4) + 1;                 /* 1..4 */
+      var c = r[band > 4 ? 4 : band];
+      /* one lighter pixel row along the top of each facet reads as a lit edge */
+      if (f[0] < 0.16) c = r[Math.min(4, band + 1)];
+      if (joint < 0.055) c = r[0];
+      else if (joint < 0.11) c = r[1];
       t.set(x, y, c[0], c[1], c[2], 255);
     });
-    return t.posterize();
+    return t.indexed(8);
   };
   T.snow = function (seed) {
-    var t = new Tile(64, 64);
+    /* Almost flat white with faint blue drift shadows and a few sparkles. */
+    var r = ramp(0xe4eaf6, 4, { dark: 0.86, lite: 1.05, cool: 0.30, warm: 0.04 });
+    var t = new Tile(32, 32);
+    var sd = seed || 21;
     t.each(function (x, y) {
-      var n = wfbm(x, y, 64, 64, 6, 3, seed || 21);
-      var c = mixc([206, 214, 232], [248, 250, 255], n);
-      var sp = wnoise(x, y, 64, 64, 32, 9);
-      if (sp > 0.94) c = [255, 255, 255, 255];
+      var v = wfbm(x, y, 32, 32, 2, 2, sd);
+      var c = pick(r, 0.28 + v * 0.6);
+      if (M.hash2(x, y, sd + 3) > 0.985) c = r[3];
       t.set(x, y, c[0], c[1], c[2], 255);
     });
-    return t.posterize();
+    return t.indexed(5);
   };
   T.lava = function (seed) {
     var t = new Tile(64, 64);
@@ -187,221 +309,291 @@ var LZ = LZ || {};
     });
     return t.posterize();
   };
-  T.water = function (colHex, seed) {
-    var base = hex(colHex || 0x2f6d9a);
-    var t = new Tile(64, 64);
+  T.water = function (colHex, seed, deep) {
+    /* Two flat blues plus a scatter of hard white glints. The era did not
+       have a water shader; it had a scrolling tile with sparkles drawn on. */
+    var r = ramp(colHex || 0x2f7ab4, 5, { dark: 0.62, lite: 1.24, cool: 0.18, warm: 0.10 });
+    var t = new Tile(32, 32);
+    var sd = seed || 141;
+    var alpha = deep ? 236 : 200;
     t.each(function (x, y) {
-      var n = wfbm(x, y, 64, 64, 4, 3, seed || 41);
-      var w1 = Math.sin((x * 0.32 + n * 6)) * 0.5 + 0.5;
-      var w2 = Math.sin((y * 0.21 - n * 5)) * 0.5 + 0.5;
-      var f = 0.72 + (w1 * w2) * 0.6;
-      var c = shade(base, f);
-      if (w1 * w2 > 0.82) c = mixc(c, [220, 240, 255, 255], 0.45);
-      t.set(x, y, c[0], c[1], c[2], 200);
+      var v = wfbm(x, y, 32, 32, 3, 2, sd);
+      var band = v < 0.40 ? 1 : (v < 0.62 ? 2 : 3);
+      var c = r[band];
+      /* glints: single pixels and two-pixel dashes on the crests */
+      var h = M.hash2(x, y, sd + 5);
+      if (v > 0.66 && h > 0.955) c = r[4];
+      else if (v > 0.72 && h > 0.90) c = r[4];
+      t.set(x, y, c[0], c[1], c[2], alpha);
     });
-    return t.posterize();
+    return t.indexed(6);
   };
-  T.cobble = function (seed) {
-    var t = new Tile(64, 64);
+  T.cobble = function (tintHex, seed) {
+    /* Rounded setts with dark mortar and a lit top edge on each stone. */
+    var r = ramp(tintHex || 0x9a978e, 5, { dark: 0.52, lite: 1.16, cool: 0.22, warm: 0.08 });
+    var t = new Tile(32, 32);
     var f = [0, 0];
+    var sd = seed || 17;
     t.each(function (x, y) {
-      var cells = 7;
-      var gx = x / 64 * cells, gy = y / 64 * cells;
-      M.worley2b(gx, gy, seed || 51, f);
+      var gx = x / 32 * 3.4, gy = y / 32 * 3.4;
+      M.worley2b(gx, gy, sd, f);
       var joint = f[1] - f[0];
-      var id = M.worleyCell(gx, gy, seed || 51);
-      var n = wfbm(x, y, 64, 64, 24, 2, (seed || 51) + 5);
-      var base = mixc([104, 100, 96], [142, 136, 126], id);
-      var c;
-      if (joint < 0.10) {
-        /* mortar: a narrow darker seam, not half the surface */
-        c = shade([74, 70, 66], 0.88 + n * 0.24);
-      } else {
-        /* each stone domes slightly toward its centre */
-        var dome = M.saturate((joint - 0.10) / 0.45);
-        c = shade(base, 0.86 + dome * 0.22 + n * 0.16);
-        if (id > 0.88) c = mixc(c, [96, 92, 100, 255], 0.30);
-        if (id < 0.12) c = mixc(c, [120, 108, 92, 255], 0.30);
-      }
+      var id = M.worleyCell(gx, gy, sd);
+      var band = 1 + Math.floor(id * 3);                 /* 1..3 */
+      var c = r[band];
+      if (f[0] < 0.13) c = r[Math.min(4, band + 1)];     /* crown of the stone */
+      if (joint < 0.075) c = r[0];                       /* mortar */
+      else if (joint < 0.13) c = r[1];
       t.set(x, y, c[0], c[1], c[2], 255);
     });
-    return t.posterize();
+    return t.indexed(8);
   };
-
-  /* ================= architecture ================= */
   T.planks = function (colHex, seed) {
-    var base = hex(colHex || 0x8a6438);
-    var t = new Tile(64, 64);
+    /* Four boards, each a flat band, with a dark seam and a couple of grain
+       strokes. Not a wood-grain gradient: a drawn board. */
+    var r = ramp(colHex || 0x9a7040, 5, { dark: 0.56, lite: 1.16, cool: 0.14, warm: 0.14 });
+    var t = new Tile(32, 32);
+    var sd = seed || 61;
     t.each(function (x, y) {
       var plank = Math.floor(y / 8);
-      var jitter = M.hash2(plank, 0, seed || 61);
-      var grain = M.valueNoise2(x * 0.42 + jitter * 30, plank * 8.3, (seed || 61) + 2);
-      var f = 0.78 + grain * 0.42 + jitter * 0.14;
-      var c = shade(base, f);
-      if (y % 8 === 0) c = shade(c, 0.48);
-      var seam = (Math.floor((x + plank * 23) / 21) * 21 - plank * 23);
-      if (((x - seam) % 64 + 64) % 64 === 0) c = shade(c, 0.55);
+      var h = M.hash2(plank, 0, sd);
+      var band = 1 + Math.floor(h * 3);
+      var c = r[band];
+      var yy = y % 8;
+      if (yy === 0) c = r[0];                            /* seam between boards */
+      else if (yy === 1) c = r[Math.min(4, band + 1)];   /* lit lip below it */
+      else if (yy === 7) c = r[Math.max(0, band - 1)];
+      /* two grain strokes per board, drawn as one-pixel dashes */
+      var gh = M.hash2(x >> 1, plank * 7 + 3, sd + 5);
+      if (yy > 1 && yy < 7 && gh > 0.90) c = r[Math.max(0, band - 1)];
+      /* a butt joint somewhere along the run */
+      if (((x + plank * 11) % 32) === 0) c = r[0];
       t.set(x, y, c[0], c[1], c[2], 255);
     });
-    return t.posterize();
+    return t.indexed(8);
   };
   T.bark = function (colHex, seed) {
-    var base = hex(colHex || 0x6b4d30);
-    var t = new Tile(32, 64);
+    /* Vertical ridges as flat bars, not a sine gradient. */
+    var r = ramp(colHex || 0x7a5636, 5, { dark: 0.54, lite: 1.14, cool: 0.16, warm: 0.12 });
+    var t = new Tile(32, 32);
+    var sd = seed || 71;
     t.each(function (x, y) {
-      var n = M.valueNoise2(x * 0.9, y * 0.14, seed || 71);
-      var ridge = Math.abs(Math.sin(x * 0.75 + n * 4)) ;
-      var c = shade(base, 0.62 + ridge * 0.62 + n * 0.2);
+      var wob = Math.floor(M.valueNoise2(y * 0.13, 0, sd) * 3);
+      var col = ((x + wob) % 32 + 32) % 32;
+      var h = M.hash2(col >> 1, 0, sd + 3);
+      var band = 1 + Math.floor(h * 3);
+      var c = r[band];
+      if ((col >> 1) % 3 === 0) c = r[0];
+      var n = M.valueNoise2(x * 0.5, y * 0.22, sd + 9);
+      if (n > 0.78) c = r[Math.min(4, band + 1)];
       t.set(x, y, c[0], c[1], c[2], 255);
     });
-    return t.posterize();
+    return t.indexed(8);
   };
   T.thatch = function (seed) {
-    var t = new Tile(64, 64);
-    var base = [160, 130, 66];
+    /* Overlapping courses of straw: a light row, a mid row, a dark shadow
+       line where the next course laps over it. */
+    var r = ramp(0xc0a052, 5, { dark: 0.52, lite: 1.14, cool: 0.14, warm: 0.16 });
+    var t = new Tile(32, 32);
+    var sd = seed || 81;
     t.each(function (x, y) {
-      var row = Math.floor(y / 10);
-      var h = M.hash2(Math.floor(x / 2) + row * 17, row, seed || 81);
-      var yy = y % 10;
-      var f = 0.62 + h * 0.5 + (yy / 10) * 0.35;
-      var c = shade(base, f);
-      if (yy === 0) c = shade(c, 0.5);
+      var row = Math.floor(y / 8), yy = y % 8;
+      var h = M.hash2((x >> 1) + row * 17, row, sd);
+      var band = yy < 2 ? 0 : (yy < 4 ? 2 : (yy < 6 ? 3 : 2));
+      if (h > 0.72) band = Math.min(4, band + 1);
+      else if (h < 0.20) band = Math.max(0, band - 1);
+      var c = r[band];
       t.set(x, y, c[0], c[1], c[2], 255);
     });
-    return t.posterize();
+    return t.indexed(6);
   };
   T.shingle = function (colHex, seed) {
-    var base = hex(colHex || 0x8c3a34);
-    var t = new Tile(64, 64);
+    /* Scalloped tiles in offset courses: a flat face, a lit top edge and a
+       hard shadow under the lap. */
+    var r = ramp(colHex || 0xa8483c, 5, { dark: 0.50, lite: 1.18, cool: 0.20, warm: 0.12 });
+    var t = new Tile(32, 32);
+    var sd = seed || 91;
     t.each(function (x, y) {
       var row = Math.floor(y / 8);
-      var off = (row % 2) * 8;
-      var cx = Math.floor((x + off) / 16);
-      var h = M.hash2(cx, row, seed || 91);
-      var yy = y % 8, xx = (x + off) % 16;
-      var f = 0.72 + h * 0.28 + (1 - yy / 8) * 0.3;
-      var c = shade(base, f);
-      if (yy === 0 || xx === 0) c = shade(c, 0.55);
+      var off = (row % 2) * 5;
+      var yy = y % 8, xx = ((x + off) % 10 + 10) % 10;
+      var h = M.hash2(Math.floor((x + off) / 10), row, sd);
+      var band = 2 + (h > 0.6 ? 1 : (h < 0.25 ? -1 : 0));
+      var c = r[band];
+      /* the scallop: round the bottom two rows off at the tile's corners */
+      var round = (yy >= 6 && (xx === 0 || xx === 9)) || (yy === 7 && (xx <= 1 || xx >= 8));
+      if (yy === 0) c = r[Math.min(4, band + 2)];
+      else if (yy >= 6 || round) c = r[0];
+      if (xx === 0) c = r[Math.max(0, band - 1)];
       t.set(x, y, c[0], c[1], c[2], 255);
     });
-    return t.posterize();
+    return t.indexed(8);
   };
   T.brick = function (colHex, mortarHex, seed) {
-    var base = hex(colHex || 0x9a5a48), mort = hex(mortarHex || 0xa89c8c);
-    var t = new Tile(64, 64);
+    var r = ramp(colHex || 0xa85c48, 5, { dark: 0.56, lite: 1.16, cool: 0.16, warm: 0.14 });
+    var mort = ramp(mortarHex || 0xb0a894, 3, { dark: 0.72, lite: 1.10 });
+    var t = new Tile(32, 32);
+    var sd = seed || 101;
     t.each(function (x, y) {
       var row = Math.floor(y / 8);
       var off = (row % 2) * 8;
-      var xx = (x + off) % 16, yy = y % 8;
+      var xx = ((x + off) % 16 + 16) % 16, yy = y % 8;
       var c;
-      if (yy < 1 || xx < 1) c = mort.slice();
+      if (yy === 0 || xx === 0) c = mort[0];
+      else if (yy === 1 || xx === 1) c = mort[2];
       else {
-        var h = M.hash2(Math.floor((x + off) / 16), row, seed || 101);
-        var n = M.valueNoise2(x * 0.6, y * 0.6, (seed || 101) + 3);
-        c = shade(base, 0.76 + h * 0.34 + n * 0.16);
+        var h = M.hash2(Math.floor((x + off) / 16), row, sd);
+        var band = 2 + (h > 0.6 ? 1 : (h < 0.3 ? -1 : 0));
+        c = r[band];
+        if (M.hash2(x, y, sd + 7) > 0.94) c = r[Math.max(0, band - 1)];
       }
       t.set(x, y, c[0], c[1], c[2], 255);
     });
-    return t.posterize();
+    return t.indexed(8);
   };
   T.stoneblock = function (colHex, seed) {
-    var base = hex(colHex || 0x8e8a80);
-    var t = new Tile(64, 64);
+    /* Dressed masonry: courses of blocks, each a flat band, deep joints. */
+    var r = ramp(colHex || 0x8e8c94, 5, { dark: 0.50, lite: 1.16, cool: 0.22, warm: 0.06 });
+    var t = new Tile(32, 32);
+    var sd = seed || 121;
     t.each(function (x, y) {
-      var row = Math.floor(y / 16);
-      var off = (row % 2) * 10;
-      var xx = ((x + off) % 22), yy = y % 16;
-      var c;
-      if (yy < 1 || xx < 1) c = shade(base, 0.5);
-      else {
-        var h = M.hash2(Math.floor((x + off) / 22), row, seed || 111);
-        var n = wfbm(x, y, 64, 64, 16, 2, (seed || 111) + 7);
-        c = shade(base, 0.8 + h * 0.24 + n * 0.22);
-        /* bevel highlight */
-        if (yy < 3 || xx < 3) c = shade(c, 1.12);
-        if (yy > 13 || xx > 19) c = shade(c, 0.88);
-      }
+      var row = Math.floor(y / 8);
+      var off = (row % 2) * 8;
+      var xx = ((x + off) % 16 + 16) % 16, yy = y % 8;
+      var h = M.hash2(Math.floor((x + off) / 16), row, sd);
+      var band = 2 + (h > 0.66 ? 1 : (h < 0.30 ? -1 : 0));
+      var c = r[band];
+      if (yy === 0 || xx === 0) c = r[0];                /* joint */
+      else if (yy === 1 || xx === 1) c = r[Math.min(4, band + 1)];
+      else if (yy === 7 || xx === 15) c = r[Math.max(0, band - 1)];
+      var n = M.hash2(x, y, sd + 9);
+      if (n > 0.965 && yy > 1 && xx > 1) c = r[Math.max(0, band - 1)];
       t.set(x, y, c[0], c[1], c[2], 255);
     });
-    return t.posterize();
+    return t.indexed(8);
   };
   T.plaster = function (colHex, seed) {
-    var base = hex(colHex || 0xd8cbae);
-    var t = new Tile(64, 64);
+    /* Village walls in this era are nearly flat colour with a faint trowel
+       mottle -- two bands, no more. Anything busier fights the roof. */
+    var r = ramp(colHex || 0xd8c8a4, 4, { dark: 0.80, lite: 1.08, cool: 0.12, warm: 0.10 });
+    var t = new Tile(32, 32);
+    var sd = seed || 111;
     t.each(function (x, y) {
-      var n = wfbm(x, y, 64, 64, 10, 3, seed || 121);
-      var c = shade(base, 0.9 + n * 0.22);
+      var v = wfbm(x, y, 32, 32, 2, 2, sd);
+      var c = pick(r, 0.30 + v * 0.55);
+      var h = M.hash2(x >> 1, y >> 1, sd + 4);
+      if (h > 0.975) c = r[0];                          /* a chip in the render */
       t.set(x, y, c[0], c[1], c[2], 255);
     });
-    return t.posterize();
+    return t.indexed(5);
   };
-  T.sandstone = function (seed) {
-    var t = new Tile(64, 64);
-    var base = [206, 172, 118];
+  T.sandstone = function (colHex, seed) {
+    /* Wind-cut courses: flat bands with a hard line where each bed ends. */
+    var r = ramp(colHex || 0xcaa877, 5, { dark: 0.62, lite: 1.14, cool: 0.14, warm: 0.14 });
+    var t = new Tile(32, 32);
+    var sd = seed || 171;
     t.each(function (x, y) {
-      var band = Math.sin(y * 0.28 + wfbm(x, y, 64, 64, 4, 2, seed || 131) * 5) * 0.5 + 0.5;
-      var n = wfbm(x, y, 64, 64, 12, 2, (seed || 131) + 9);
-      var c = shade(base, 0.82 + band * 0.2 + n * 0.2);
-      if (y % 16 === 0) c = shade(c, 0.72);
+      var wob = Math.floor(M.valueNoise2(x * 0.10, 0, sd) * 3);
+      var row = Math.floor((y + wob) / 6);
+      var h = M.hash2(row, 0, sd);
+      var band = 2 + (h > 0.62 ? 1 : (h < 0.30 ? -1 : 0));
+      var c = r[band];
+      if (((y + wob) % 6) === 0) c = r[Math.max(0, band - 2)];
+      if (M.hash2(x >> 1, y >> 1, sd + 5) > 0.94) c = r[Math.min(4, band + 1)];
       t.set(x, y, c[0], c[1], c[2], 255);
     });
-    return t.posterize();
+    return t.indexed(6);
   };
-  T.tilefloor = function (aHex, bHex, seed) {
-    var A = hex(aHex || 0x6a6f86), B = hex(bHex || 0x4a4e63);
-    var t = new Tile(64, 64);
+  T.tilefloor = function (colHex, jointHex, seed) {
+    /* Flagstones: a flat face per tile, a lit top-left edge, a dark joint. */
+    var r = ramp(colHex || 0x8e8fa0, 5, { dark: 0.52, lite: 1.16, cool: 0.20, warm: 0.06 });
+    var joint = jointHex === undefined ? r[0] : hex(jointHex);
+    var t = new Tile(32, 32);
+    var sd = seed || 151;
     t.each(function (x, y) {
       var cx = Math.floor(x / 16), cy = Math.floor(y / 16);
-      var base = ((cx + cy) % 2 === 0) ? A : B;
-      var n = wfbm(x, y, 64, 64, 16, 2, seed || 141);
-      var c = shade(base, 0.86 + n * 0.26);
-      if (x % 16 === 0 || y % 16 === 0) c = shade(c, 0.62);
+      var xx = x % 16, yy = y % 16;
+      var h = M.hash2(cx, cy, sd);
+      var band = 2 + (h > 0.66 ? 1 : (h < 0.33 ? -1 : 0));
+      var c = r[band];
+      if (xx === 0 || yy === 0) c = joint;
+      else if (xx === 1 || yy === 1) c = r[Math.min(4, band + 1)];
+      else if (xx === 15 || yy === 15) c = r[Math.max(0, band - 1)];
+      if (M.hash2(x, y, sd + 3) > 0.972 && xx > 1 && yy > 1) c = r[Math.max(0, band - 1)];
       t.set(x, y, c[0], c[1], c[2], 255);
     });
-    return t.posterize();
+    return t.indexed(8);
   };
-  T.carpet = function (colHex, trimHex, seed) {
-    var base = hex(colHex || 0x8c2b34), trim = hex(trimHex || 0xd0b356);
-    var t = new Tile(64, 64);
+  T.carpet = function (colHex, borderHex, seed) {
+    /* Woven cloth: a flat field, a lighter warp every other column, and a
+       border band. Two tones plus the border is all it needs. */
+    var r = ramp(colHex || 0x9a3038, 5, { dark: 0.58, lite: 1.18, cool: 0.16, warm: 0.12 });
+    var bord = borderHex === undefined ? r[4] : hex(borderHex);
+    var t = new Tile(32, 32);
+    var sd = seed || 161;
     t.each(function (x, y) {
-      var n = wnoise(x, y, 64, 64, 32, seed || 151);
-      var c = shade(base, 0.88 + n * 0.24);
-      var bx = Math.min(x, 63 - x), by = Math.min(y, 63 - y);
-      var edge = Math.min(bx, by);
-      if (edge < 3) c = shade(trim, 0.9 + n * 0.2);
-      else if (edge < 5) c = shade(base, 0.7);
-      t.set(x, y, c[0], c[1], c[2], 255);
-    });
-    return t.posterize();
-  };
-  T.metal = function (colHex, rust, seed) {
-    var base = hex(colHex || 0x9aa2ad);
-    var t = new Tile(64, 64);
-    t.each(function (x, y) {
-      var n = wfbm(x, y, 64, 64, 8, 3, seed || 161);
-      var scratch = M.valueNoise2(x * 0.1, y * 2.4, (seed || 161) + 4);
-      var c = shade(base, 0.82 + n * 0.2 + scratch * 0.22);
-      if (rust) {
-        var r = wfbm(x, y, 64, 64, 5, 3, (seed || 161) + 55);
-        if (r > 0.52) c = mixc(c, [128, 66, 32, 255], M.smoothstep(0.52, 0.8, r) * 0.9);
+      var edge = Math.min(Math.min(x, 31 - x), Math.min(y, 31 - y));
+      var c;
+      if (edge === 0) c = r[0];
+      else if (edge < 3) c = bord;
+      else {
+        /* a woven check, not a diagonal stripe: warp and weft alternate */
+        var band = (((x >> 1) + (y >> 1)) & 1) ? 2 : 3;
+        if (M.hash2(x >> 1, y >> 1, sd) > 0.90) band = Math.max(1, band - 1);
+        c = r[band];
       }
       t.set(x, y, c[0], c[1], c[2], 255);
     });
-    return t.posterize();
+    return t.indexed(6);
   };
-
-  /* ================= foliage (cutout) ================= */
-  T.leaves = function (colHex, seed) {
-    var base = hex(colHex || 0x3f7a3a);
-    var t = new Tile(64, 64);
+  T.metal = function (colHex, rust, seed) {
+    /* Hammered plate: flat bands with a hard highlight streak, plus rivets. */
+    var r = ramp(colHex || 0x9aa2ae, 5,
+      rust ? { dark: 0.54, lite: 1.14, cool: 0.08, warm: 0.22 }
+           : { dark: 0.46, lite: 1.30, cool: 0.24, warm: 0.06 });
+    var t = new Tile(32, 32);
+    var sd = seed || 131;
     t.each(function (x, y) {
-      var d = M.worley2(x / 64 * 7, y / 64 * 7, seed || 171);
-      var n = wfbm(x, y, 64, 64, 8, 3, (seed || 171) + 6);
-      var a = (d < 0.42 || n > 0.56) ? 255 : 0;
-      var c = shade(base, 0.66 + n * 0.72 + (0.42 - d) * 0.5);
-      t.set(x, y, c[0], c[1], c[2], a);
+      var v = wfbm(x, y, 32, 32, rust ? 4 : 2, 2, sd);
+      var band = v < 0.42 ? 1 : (v < 0.66 ? 2 : 3);
+      var c = r[band];
+      /* plate seams, horizontal and vertical, not a diagonal streak */
+      if (y % 16 === 0) c = r[0];
+      else if (y % 16 === 1) c = r[4];
+      /* rivets along the seam */
+      var rx = ((x + 4) % 8), ry = ((y + 15) % 16);
+      if (ry < 3 && rx === 0) c = r[4];
+      else if (ry < 4 && rx === 1) c = r[0];
+      if (rust && M.hash2(x >> 1, y >> 1, sd + 7) > 0.80) c = r[Math.max(0, band - 1)];
+      t.set(x, y, c[0], c[1], c[2], 255);
     });
-    return t.posterize();
+    return t.indexed(8);
+  };
+  T.leaves = function (colHex, seed) {
+    /* A foliage cutout, not a noise field. Alpha is a handful of solid
+       clumps with hard edges; inside them the colour is three flat bands
+       with a lit crown, the way a canopy sheet was drawn in 1998. */
+    var r = ramp(colHex || 0x4c8a40, 5, { dark: 0.50, lite: 1.22, cool: 0.22, warm: 0.14 });
+    var t = new Tile(32, 32);
+    var sd = seed || 171;
+    t.each(function (x, y) {
+      /* clump field: low-frequency, hard-thresholded */
+      var m = wfbm(x, y, 32, 32, 3, 2, sd);
+      var edge = wnoise(x, y, 32, 32, 8, sd + 3) * 0.14;
+      var v = m + edge;
+      if (v < 0.44) { t.set(x, y, 0, 0, 0, 0); return; }
+      var band;
+      if (v < 0.50) band = 0;            /* the rim of a clump sits in shade */
+      else if (v < 0.60) band = 1;
+      else if (v < 0.70) band = 2;
+      else if (v < 0.80) band = 3;
+      else band = 4;
+      /* a few flecked leaves catching light inside the mass */
+      if (M.hash2(x >> 1, y >> 1, sd + 11) > 0.90 && band >= 2) band = 4;
+      var c = r[band];
+      t.set(x, y, c[0], c[1], c[2], 255);
+    });
+    return t.indexed(6);
   };
   T.grassblade = function (colHex, seed) {
     var base = hex(colHex || 0x63a34b);
@@ -487,100 +679,128 @@ var LZ = LZ || {};
 
   /* ================= character / creature skins ================= */
   T.cloth = function (colHex, seed) {
-    var base = hex(colHex || 0x2f7a3c);
+    /* Character cloth is nearly flat on purpose. All the shape on an N64
+       character comes from vertex lighting and from the silhouette; a busy
+       fabric texture only muddies the one clean shape you get. Two bands
+       and a few fold creases. */
+    var r = ramp(colHex || 0x3f9a4c, 4, { dark: 0.74, lite: 1.14, cool: 0.18, warm: 0.10 });
     var t = new Tile(32, 32);
+    var sd = seed || 211;
     t.each(function (x, y) {
-      var weave = ((x % 2) ^ (y % 2)) * 0.06;
-      var n = wfbm(x, y, 32, 32, 6, 2, seed || 211);
-      var c = shade(base, 0.9 + n * 0.2 + weave);
+      var v = wfbm(x, y, 32, 32, 2, 2, sd);
+      var c = v < 0.44 ? r[1] : (v < 0.74 ? r[2] : r[3]);
+      /* a couple of soft fold lines running down the cloth */
+      var fold = Math.abs(Math.sin((x * 0.30 + M.valueNoise2(0, y * 0.12, sd) * 3)));
+      if (fold < 0.10) c = r[0];
       t.set(x, y, c[0], c[1], c[2], 255);
     });
-    return t.posterize();
+    return t.indexed(5);
   };
   T.leather = function (colHex, seed) {
-    var base = hex(colHex || 0x6b4a2c);
+    var r = ramp(colHex || 0x8a6038, 4, { dark: 0.66, lite: 1.14, cool: 0.14, warm: 0.14 });
     var t = new Tile(32, 32);
+    var sd = seed || 221;
     t.each(function (x, y) {
-      var d = M.worley2(x / 32 * 6, y / 32 * 6, seed || 221);
-      var c = shade(base, 0.8 + d * 0.5);
+      var d = M.worley2(x / 32 * 4, y / 32 * 4, sd);
+      var c = d < 0.24 ? r[1] : (d < 0.55 ? r[2] : r[3]);
+      if (d < 0.10) c = r[0];
       t.set(x, y, c[0], c[1], c[2], 255);
     });
-    return t.posterize();
+    return t.indexed(5);
   };
   T.skin = function (colHex, seed) {
-    var base = hex(colHex || 0xe0b48c);
+    /* Two tones, and only just. Skin wants to be a clean flat field so the
+       painted face tile is the only detail on the head. */
+    var r = ramp(colHex || 0xf0c49c, 3, { dark: 0.90, lite: 1.05, cool: 0.10, warm: 0.10 });
     var t = new Tile(32, 32);
+    var sd = seed || 231;
     t.each(function (x, y) {
-      var n = wfbm(x, y, 32, 32, 8, 2, seed || 231);
-      var c = shade(base, 0.95 + n * 0.12);
+      var v = wfbm(x, y, 32, 32, 2, 2, sd);
+      var c = v < 0.46 ? r[1] : r[2];
       t.set(x, y, c[0], c[1], c[2], 255);
     });
-    return t.posterize();
+    return t.indexed(3);
   };
   T.scale = function (colHex, seed) {
-    var base = hex(colHex || 0x4f7a3a);
+    /* Overlapping scales: flat face, lit crown, hard shadow at the lap. */
+    var r = ramp(colHex || 0x4f9a44, 5, { dark: 0.52, lite: 1.22, cool: 0.20, warm: 0.10 });
     var t = new Tile(32, 32);
+    var sd = seed || 241;
     t.each(function (x, y) {
       var row = Math.floor(y / 5), off = (row % 2) * 3;
-      var xx = (x + off) % 6, yy = y % 5;
-      var h = M.hash2(Math.floor((x + off) / 6), row, seed || 241);
-      var c = shade(base, 0.72 + h * 0.2 + (1 - yy / 5) * 0.4);
-      if (yy === 0 || xx === 0) c = shade(c, 0.68);
+      var xx = ((x + off) % 6 + 6) % 6, yy = y % 5;
+      var h = M.hash2(Math.floor((x + off) / 6), row, sd);
+      var band = 2 + (h > 0.66 ? 1 : (h < 0.30 ? -1 : 0));
+      var c = r[band];
+      if (yy === 0) c = r[Math.min(4, band + 2)];
+      else if (yy === 4 || xx === 0) c = r[0];
       t.set(x, y, c[0], c[1], c[2], 255);
     });
-    return t.posterize();
+    return t.indexed(6);
   };
   T.bone = function (seed) {
+    var r = ramp(0xe6dcc0, 4, { dark: 0.66, lite: 1.08, cool: 0.16, warm: 0.10 });
     var t = new Tile(32, 32);
-    var base = [222, 214, 190];
+    var sd = seed || 251;
     t.each(function (x, y) {
-      var n = wfbm(x, y, 32, 32, 6, 3, seed || 251);
-      var c = shade(base, 0.82 + n * 0.28);
-      if (n < 0.28) c = mixc(c, [120, 112, 96, 255], 0.6);
+      var v = wfbm(x, y, 32, 32, 3, 2, sd);
+      var c = v < 0.34 ? r[1] : (v < 0.70 ? r[2] : r[3]);
+      /* hairline cracks */
+      if (M.hash2(x >> 1, y, sd + 3) > 0.965) c = r[0];
       t.set(x, y, c[0], c[1], c[2], 255);
     });
-    return t.posterize();
+    return t.indexed(5);
   };
   T.fur = function (colHex, seed) {
-    var base = hex(colHex || 0x4a3a52);
+    /* Short vertical strokes in three bands: reads as fur at any distance
+       where a smooth gradient reads as plastic. */
+    var r = ramp(colHex || 0x6a5a76, 4, { dark: 0.62, lite: 1.16, cool: 0.20, warm: 0.08 });
     var t = new Tile(32, 32);
+    var sd = seed || 261;
     t.each(function (x, y) {
-      var n = M.valueNoise2(x * 0.4, y * 2.2, seed || 261);
-      var c = shade(base, 0.72 + n * 0.6);
+      var h = M.hash2(x, y >> 2, sd);
+      var band = h < 0.28 ? 1 : (h < 0.72 ? 2 : 3);
+      var c = r[band];
+      if ((y & 3) === 3) c = r[Math.max(0, band - 1)];
       t.set(x, y, c[0], c[1], c[2], 255);
     });
-    return t.posterize();
+    return t.indexed(5);
   };
   T.jelly = function (colHex, seed) {
-    var base = hex(colHex || 0x4ab0c8);
+    /* Translucent blob: a flat body, a bright rim band and one hard glare. */
+    var r = ramp(colHex || 0x4ab0c8, 5, { dark: 0.60, lite: 1.30, cool: 0.16, warm: 0.10 });
     var t = new Tile(32, 32);
+    var sd = seed || 271;
     t.each(function (x, y) {
-      var n = wfbm(x, y, 32, 32, 4, 3, seed || 271);
-      var c = shade(base, 0.7 + n * 0.8);
-      var a = 200 + n * 55;
+      var v = wfbm(x, y, 32, 32, 2, 2, sd);
+      var band = v < 0.42 ? 1 : (v < 0.72 ? 2 : 3);
+      var c = r[band];
+      var a = 200 + band * 14;
+      /* one glare blob, drawn not computed */
+      var dx = x - 10, dy = y - 9;
+      if (dx * dx + dy * dy < 10) { c = r[4]; a = 250; }
       t.set(x, y, c[0], c[1], c[2], a);
     });
-    return t.posterize();
+    return t.indexed(6);
   };
   T.evil = function (colHex, seed) {
-    /* churning dark energy: used for Genmo's aura and shadow creatures */
-    var base = hex(colHex || 0x3a1550);
-    var t = new Tile(64, 64);
+    /* Churning dark energy for Genmo's aura and the shadow creatures.
+       Banded so the churn reads as moving shapes, not as a purple fog. */
+    var r = ramp(colHex || 0x4a1c68, 5, { dark: 0.52, lite: 1.44, cool: 0.10, warm: 0.20 });
+    var t = new Tile(32, 32);
+    var sd = seed || 281;
     t.each(function (x, y) {
-      var n = wfbm(x, y, 64, 64, 5, 4, seed || 281);
-      var v = wfbm(x + 17, y + 5, 64, 64, 9, 3, (seed || 281) + 3);
-      var c = mixc(base, [176, 60, 210, 255], M.smoothstep(0.45, 0.85, n * 0.6 + v * 0.5));
-      if (n * v > 0.42) c = mixc(c, [255, 200, 120, 255], 0.35);
+      var n = wfbm(x, y, 32, 32, 3, 3, sd);
+      var v = wfbm(x + 7, y + 3, 32, 32, 6, 2, sd + 3);
+      var m = n * 0.62 + v * 0.44;
+      var band = m < 0.36 ? 0 : (m < 0.52 ? 1 : (m < 0.66 ? 2 : (m < 0.80 ? 3 : 4)));
+      var c = r[band];
+      /* embers riding the brightest crests */
+      if (band === 4 && M.hash2(x, y, sd + 11) > 0.72) c = [255, 206, 128, 255];
       t.set(x, y, c[0], c[1], c[2], 255);
     });
-    return t.posterize();
+    return t.indexed(7);
   };
-
-  /* ---- painted faces -------------------------------------------------
-     The N64 Zelda games did not model eyes and mouths; they painted them
-     onto a flat head texture, which is why the characters read as
-     expressive at 30 polygons. The plain skin patch in the top-right
-     corner is what the non-facing sides of the head sample. */
   T.face = function (o) {
     o = o || {};
     var skin = hex(o.skin === undefined ? 0xe8c49c : o.skin);
@@ -761,37 +981,52 @@ var LZ = LZ || {};
 
   /* ================= props / effects ================= */
   T.chestwood = function (seed) {
-    var t = T.planks(0x7a5228, seed || 291);
-    /* iron banding */
+    /* Boards with an iron band down one edge, both drawn in flat bands. */
+    var t = T.planks(0x8a5c2c, seed || 291);
+    var ir = ramp(0x7c828e, 4, { dark: 0.50, lite: 1.26, cool: 0.22, warm: 0.06 });
     t.each(function (x, y) {
-      if (x % 32 < 4) {
-        var n = M.valueNoise2(x * 0.7, y * 0.7, 5);
-        t.set(x, y, 96 + n * 50, 100 + n * 50, 110 + n * 50, 255);
+      var xx = x % 32;
+      if (xx < 5) {
+        var c = ir[2];
+        if (xx === 0 || xx === 4) c = ir[0];
+        else if (xx === 1) c = ir[3];
+        if (y % 8 === 0) c = ir[0];
+        if ((y % 8 === 4) && xx === 2) c = ir[3];   /* stud */
+        t.set(x, y, c[0], c[1], c[2], 255);
       }
     });
-    return t.posterize();
+    return t.indexed(10);
   };
   T.gold = function (seed) {
+    /* Polished metal: three flat bands with a hard specular streak. */
+    var r = ramp(0xd8ac48, 5, { dark: 0.48, lite: 1.34, cool: 0.12, warm: 0.22 });
     var t = new Tile(32, 32);
-    var base = [214, 172, 62];
+    var sd = seed || 301;
     t.each(function (x, y) {
-      var n = wfbm(x, y, 32, 32, 5, 3, seed || 301);
-      var c = shade(base, 0.68 + n * 0.8);
-      if (n > 0.78) c = [255, 246, 200, 255];
+      var n = wfbm(x, y, 32, 32, 2, 2, sd);
+      var band = n < 0.36 ? 1 : (n < 0.62 ? 2 : 3);
+      var c = r[band];
+      /* a horizontal specular band, the way a burnished N64 tile was drawn */
+      if (y % 12 === 3) c = r[4];
+      else if (y % 12 === 4) c = r[3];
+      else if (y % 12 === 9) c = r[0];
       t.set(x, y, c[0], c[1], c[2], 255);
     });
-    return t.posterize();
+    return t.indexed(6);
   };
   T.gem = function (colHex, seed) {
-    var base = hex(colHex || 0x2fd06a);
+    /* Cut facets: hard triangular bands, one white glint. */
+    var r = ramp(colHex || 0x2fd06a, 5, { dark: 0.44, lite: 1.38, cool: 0.18, warm: 0.10 });
     var t = new Tile(32, 32);
     t.each(function (x, y) {
-      var f = Math.abs(Math.sin(x * 0.4) + Math.cos(y * 0.36));
-      var c = shade(base, 0.55 + f * 0.7);
-      if (f > 1.6) c = mixc(c, [255, 255, 255, 255], 0.5);
+      var fx = (x % 16) - 8, fy = (y % 16) - 8;
+      var f = Math.sqrt(fx * fx + fy * fy) / 11;
+      var band = f < 0.30 ? 4 : (f < 0.52 ? 3 : (f < 0.74 ? 2 : 1));
+      var c = r[band];
+      if (fx === -3 && fy > -6 && fy < -2) c = [255, 255, 255, 255];
       t.set(x, y, c[0], c[1], c[2], 255);
     });
-    return t.posterize();
+    return t.indexed(6);
   };
   T.flame = function (seed) {
     var t = new Tile(32, 32);
@@ -892,27 +1127,36 @@ var LZ = LZ || {};
     return t.posterize();
   };
   T.sky = function (topHex, botHex, seed) {
-    var A = hex(topHex), B = hex(botHex);
+    /* A banded sky. Cartridges could not hold a smooth vertical ramp in a
+       64x64 tile, so skyboxes were painted as a stack of flat bands with
+       cloud shelves drawn on top; the banding is the look, not an artefact. */
+    var A = typeof topHex === 'number' ? hex(topHex) : topHex;
+    var B = typeof botHex === 'number' ? hex(botHex) : botHex;
     var t = new Tile(64, 64);
+    var sd = seed || 331;
+    var BANDS = 9;
+    var cols = [];
+    for (var i = 0; i < BANDS; i++) {
+      var u = i / (BANDS - 1);
+      cols.push(mixc(A, B, Math.pow(u, 1.7)));
+    }
+    var cloud = [250, 250, 252, 255];
     t.each(function (x, y) {
       var v = y / 63;                       /* 0 = zenith, 1 = horizon */
-      /* Hold the deep colour high and let it fall away fast near the
-         horizon: a linear ramp reads as a washed-out grey wall, while this
-         keeps a real blue overhead the way an N64 skybox did. */
-      var c = mixc(A, B, Math.pow(v, 1.9));
-      /* flat-bottomed cloud shelves stacked toward the horizon */
-      var n = wfbm(x, y * 2.4, 64, 154, 5, 3, seed || 331);
-      var shelf = M.smoothstep(0.50, 0.68, n);
-      /* the bands compress with distance, so more of them low in the sky */
-      var stack = 0.35 + 0.65 * M.smoothstep(0.10, 0.72, v);
-      var cloud = shelf * stack * M.smoothstep(0.04, 0.30, v) * M.smoothstep(1.0, 0.74, v);
-      c = mixc(c, [250, 250, 252, 255], cloud * 0.85);
-      /* a warm haze right at the horizon line */
-      var haze = M.smoothstep(0.80, 1.0, v);
-      c = mixc(c, mixc(B, [255, 250, 236, 255], 0.35), haze * 0.55);
+      var bi = Math.min(BANDS - 1, Math.floor(v * BANDS));
+      var c = cols[bi];
+      /* flat-bottomed shelves, stacking denser toward the horizon */
+      var n = wfbm(x, y * 2.4, 64, 154, 4, 3, sd);
+      var thresh = 0.70 - 0.24 * M.smoothstep(0.10, 0.78, v);
+      if (v > 0.10 && v < 0.90 && n > thresh) {
+        var lift = n > thresh + 0.10 ? 1 : 0.55;
+        c = mixc(c, cloud, lift * 0.85);
+      }
+      /* a warm haze band right at the horizon line */
+      if (v > 0.86) c = mixc(c, mixc(B, [255, 246, 226, 255], 0.4), (v - 0.86) / 0.14 * 0.6);
       t.set(x, y, c[0], c[1], c[2], 255);
     });
-    return t.posterize();
+    return t.indexed(16);
   };
   T.moon = function () {
     var t = new Tile(64, 64);

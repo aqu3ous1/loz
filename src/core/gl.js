@@ -200,12 +200,20 @@ var LZ = LZ || {};
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
     }
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
-    /* Always NEAREST: the 3-point filter is done in the fragment shader,
-       so hardware filtering must stay out of the way. */
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
     var wrap = o.wrap === 'clamp' ? gl.CLAMP_TO_EDGE : (o.wrap === 'mirror' ? gl.MIRRORED_REPEAT : gl.REPEAT);
     var isPow2 = ((w & (w - 1)) === 0) && ((h & (h - 1)) === 0);
+    /* Magnification stays NEAREST -- the 3-point filter is done in the
+       fragment shader and hardware filtering must stay out of its way up
+       close. Minification gets mipmaps, which the RDP also had: without
+       them a 32x32 tile on ground running to the horizon turns into
+       crawling static, which is the one artefact that never appeared on
+       real hardware. NEAREST_MIPMAP_LINEAR keeps each level crisp while
+       fading between them, so the ground settles instead of boiling. */
+    var mip = o.mipmap !== false && isPow2;
+    if (mip) gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER,
+      mip ? gl.NEAREST_MIPMAP_LINEAR : gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
     if (!isPow2) wrap = gl.CLAMP_TO_EDGE;
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, o.wrapS ? (o.wrapS === 'clamp' ? gl.CLAMP_TO_EDGE : gl.REPEAT) : wrap);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, o.wrapT ? (o.wrapT === 'clamp' ? gl.CLAMP_TO_EDGE : gl.REPEAT) : wrap);

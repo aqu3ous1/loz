@@ -18,6 +18,10 @@ var LZ = LZ || {};
       width: tile.w, height: tile.h,
       wrap: (opts && opts.wrap) || 'repeat', flipY: false
     });
+    /* keep the source tile so the texture sheet tool can show what the
+       generator actually drew, at 1:1 and with a colour count */
+    if (!this.rawTiles) this.rawTiles = {};
+    this.rawTiles[name] = tile;
     return this.tex[name];
   };
   Assets.prototype._m = function (name, texName, opts) {
@@ -104,8 +108,8 @@ var LZ = LZ || {};
       self._t('water', t.water(0x2f6d9a, 41));
       self._t('waterDeep', t.water(0x1c4a72, 47));
       self._t('waterMurk', t.water(0x3d5a3a, 53));
-      self._t('cobble', t.cobble(51));
-      self._t('cobbleDark', t.cobble(59));
+      self._t('cobble', t.cobble(0x9e9a90, 51));
+      self._t('cobbleDark', t.cobble(0x6e6c70, 59));
     });
 
     step('architecture', function () {
@@ -125,7 +129,7 @@ var LZ = LZ || {};
       self._t('stoneblockWarm', t.stoneblock(0x9c8a6c, 127));
       self._t('plaster', t.plaster(0xd8cbae, 121));
       self._t('plasterBlue', t.plaster(0xa8b4c8, 123));
-      self._t('sandstone', t.sandstone(131));
+      self._t('sandstone', t.sandstone(0xcaa877, 131));
       self._t('tileFloor', t.tilefloor(0x6a6f86, 0x4a4e63, 141));
       self._t('tileWarm', t.tilefloor(0xa08a62, 0x7c6846, 143));
       self._t('carpet', t.carpet(0x8c2b34, 0xd0b356, 151));
@@ -198,10 +202,10 @@ var LZ = LZ || {};
       self._t('spark', t.spark(0xffffff), { wrap: 'clamp' });
       self._t('slash', t.slash(0xffffff), { wrap: 'clamp' });
       self._t('moon', t.moon(), { wrap: 'clamp' });
-      self._t('skyDay', t.sky(0x3f78c8, 0xbfd8ee, 331));
+      self._t('skyDay', t.sky(0x2f6ec4, 0xa8cfee, 331));
       self._t('skyDusk', t.sky(0x2a2f6a, 0xe0946a, 333));
       self._t('skyNight', t.sky(0x0a0c22, 0x2a2a4e, 335));
-      self._t('skyDesert', t.sky(0x4a7ec0, 0xe8d0a0, 337));
+      self._t('skyDesert', t.sky(0x3d78c4, 0xe4cc9c, 337));
       self._t('skyAsh', t.sky(0x4a4450, 0x8a7a70, 339));
       self._t('skyStorm', t.sky(0x2a1c34, 0x6a4a5a, 341));
       self._t('skyVoid', t.sky(0x140a20, 0x40183c, 343));
