@@ -36,6 +36,10 @@ var LZ = LZ || {};
     this.g.input.swallow();
   };
   Cutscene.prototype.skip = function () {
+    /* Nothing to skip is not an error. end() clears the step list, so a
+       second skip -- a player still mashing the button as the scene ends --
+       would otherwise dereference null and take the game down. */
+    if (!this.active || !this.steps) return;
     /* run every remaining side effect instantly, then end */
     while (this.index < this.steps.length) {
       var s = this.steps[this.index++];
@@ -47,6 +51,7 @@ var LZ = LZ || {};
     this.end();
   };
   Cutscene.prototype.end = function () {
+    if (!this.active) return;
     this.active = false;
     this.steps = null;
     this.g.hud.visible = true;
