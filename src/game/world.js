@@ -308,11 +308,51 @@ var LZ = LZ || {};
   };
 
   World.prototype.addWaterPlane = function (w) {
-    var mb = new GL.MeshBuilder();
-    mb.setColor(1, 1, 1, 0.80);
-    mb.quad([w.x0, w.level, w.z1], [w.x1, w.level, w.z1], [w.x1, w.level, w.z0], [w.x0, w.level, w.z0],
-      [(w.x1 - w.x0) / 6, (w.z1 - w.z0) / 6]);
-    this.waterMeshes.push({ mesh: mb.build(this.r), mat: w.type === 'murk' ? 'waterMurk' : (w.type === 'deep' ? 'waterDeep' : 'water'), w: w });
+    /* Not one quad. Water reads as a body of water only when its colour
+       changes with what is under it -- pale and translucent where the bed is
+       close, dark and opaque out in the middle -- and when two layers scroll
+       across each other at different speeds. One flat plate with a scrolling
+       tile reads as a sheet of lino. */
+    var mat = w.type === 'murk' ? 'waterMurk' : (w.type === 'deep' ? 'waterDeep' : 'water');
+    var N = w.segs || 20;
+    var uv = [(w.x1 - w.x0) / 7, (w.z1 - w.z0) / 7];
+    var self = this;
+    function layer(scale, alphaMul, lift) {
+      var mb = new GL.MeshBuilder();
+      var grid = [];
+      for (var j = 0; j <= N; j++) {
+        var row = [];
+        for (var i = 0; i <= N; i++) {
+          var u = i / N, v = j / N;
+          var px = w.x0 + (w.x1 - w.x0) * u, pz = w.z0 + (w.z1 - w.z0) * v;
+          /* how deep the water is here, from the bed below it */
+          var depth = Math.max(0, w.level - self.groundHeight(px, pz));
+          var k = M.saturate(depth / (w.deepAt || 2.2));
+          var shade = 1.16 - 0.40 * k;
+          var alpha = (0.62 + 0.32 * k) * alphaMul;
+          /* A pale band where the water runs out. Every shoreline that
+             reads reads because of this line; without it the water just
+             stops and you are looking at two materials meeting. */
+          var foam = 1 - M.smoothstep(0.06, 0.42, depth);
+          if (foam > 0) {
+            shade += foam * 0.55;
+            alpha = alpha * (1 - foam) + 0.80 * foam * alphaMul;
+          }
+          row.push(mb.vert(px, w.level + lift, pz, 0, 1, 0,
+            u * uv[0] * scale, v * uv[1] * scale, [shade, shade, shade, alpha]));
+        }
+        grid.push(row);
+      }
+      for (var jj = 0; jj < N; jj++) {
+        for (var ii = 0; ii < N; ii++) {
+          mb.i.push(grid[jj][ii], grid[jj + 1][ii], grid[jj + 1][ii + 1]);
+          mb.i.push(grid[jj][ii], grid[jj + 1][ii + 1], grid[jj][ii + 1]);
+        }
+      }
+      return mb.build(self.r);
+    }
+    this.waterMeshes.push({ mesh: layer(1, 1, 0), mat: mat, w: w, drift: 1 });
+    this.waterMeshes.push({ mesh: layer(1.7, 0.42, 0.012), mat: mat, w: w, drift: -0.55 });
   };
 
   /* ---------------- actors ---------------- */
@@ -448,8 +488,11 @@ var LZ = LZ || {};
     for (i = 0; i < this.waterMeshes.length; i++) {
       var wm = this.waterMeshes[i];
       var mat = a.frameMat(wm.mat, null);
-      /* scrolling UVs sell moving water far better than any vertex wave */
-      mat.uv = [1, 1, this.time * 0.035, this.time * 0.021];
+      /* Two layers crossing at different speeds and scales. A single
+         scrolling tile reads as a conveyor belt; two beating against each
+         other read as a surface. */
+      var dr = wm.drift === undefined ? 1 : wm.drift;
+      mat.uv = [1, 1, this.time * 0.035 * dr, this.time * 0.021 * dr];
       r.submit(wm.mesh, this._identity, mat);
     }
 

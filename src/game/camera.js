@@ -161,9 +161,14 @@ var LZ = LZ || {};
       var len = V3.len(_dir);
       if (len > 0.01) {
         V3.scale(_dir, _dir, 1 / len);
-        var hit = world.col.raycast(_focus, _dir, len + 0.3, function (s) { return s.solid && !s.noCameraBlock; });
+        var hit = world.col.raycast(_focus, _dir, len + 0.3, function (s) {
+          return s.solid && !s.noCameraBlock && s.surface !== 'water';
+        });
         if (hit) {
-          var d = Math.max(1.0, hit.t - 0.35);
+          /* Never closer than this: at one unit the camera sits inside a
+             character who is one and a half tall, and you are looking at the
+             back of his skull from the inside. */
+          var d = Math.max(2.1, hit.t - 0.35);
           V3.addScaled(_desired, _focus, _dir, d);
           this._blocked = 1;
         } else {

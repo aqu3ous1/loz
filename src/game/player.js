@@ -1061,6 +1061,22 @@ var LZ = LZ || {};
       /* skip the body but keep the shadow, like the era's blink */
       return;
     }
+    /* Fade out when the camera is pressed right up against him. It gets
+       shoved in by walls in tight spots, and a solid green wall of tunic
+       filling the screen is worse than briefly not seeing yourself. */
+    var cam = g.cam;
+    if (cam && cam.mode !== 'firstPerson') {
+      var dx = cam.pos[0] - this.pos[0], dz = cam.pos[2] - this.pos[2];
+      var dy = cam.pos[1] - (this.pos[1] + this.height * 0.6);
+      var d = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      var a = M.saturate((d - 1.05) / 1.15);
+      if (a <= 0.02) return;
+      var prev = this.alpha;
+      this.alpha = prev * a;
+      _baseDraw.call(this, g);
+      this.alpha = prev;
+      return;
+    }
     _baseDraw.call(this, g);
   };
 
