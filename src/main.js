@@ -862,7 +862,10 @@ var LZ = LZ || {};
     this.cutscene.update(dt);
 
     if (!this.menu.open && !this.cutscene.active) {
-      if (this.input.pressed('start') && !this.dialogue.active) this.menu.toggle();
+      if (this.input.pressed('start') && !this.dialogue.active) {
+        this.input.consume('start');
+        this.menu.toggle();
+      }
     }
 
     var frozen = this.menu.open;

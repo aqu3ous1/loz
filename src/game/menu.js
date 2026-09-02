@@ -55,7 +55,9 @@ var LZ = LZ || {};
     var input = this.g.input;
     if (this.messageT > 0) this.messageT -= dt;
 
-    if (input.pressed('start')) { this.toggle(); return; }
+    /* Consume it, or main's own Start check runs later in the same frame,
+       sees the press still standing and reopens what we just closed. */
+    if (input.pressed('start')) { input.consume('start'); this.toggle(); return; }
     if (input.pressed('l')) { this.page = (this.page - 1 + PAGES.length) % PAGES.length; this.cursor = 0; this.col = 0; this.g.audio.sfx('menu_move'); }
     if (input.pressed('r')) { this.page = (this.page + 1) % PAGES.length; this.cursor = 0; this.col = 0; this.g.audio.sfx('menu_move'); }
 

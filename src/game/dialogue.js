@@ -93,7 +93,10 @@ var LZ = LZ || {};
         this.blipTimer = 0;
         this.g.audio.sfx('blip', { minGap: 0.02 });
       }
-      if (input.pressed('a') || input.pressed('b')) this.reveal = this.total;
+      if (input.pressed('a') || input.pressed('b')) {
+        this.reveal = this.total;
+        input.consume('a'); input.consume('b');
+      }
       return;
     }
 
@@ -114,6 +117,7 @@ var LZ = LZ || {};
       this.holdTimer -= dt;
       if (Math.abs(input.rawStick[1]) < 0.4) this.holdTimer = 0;
       if (input.pressed('a') || input.pressed('b')) {
+        input.consume('a'); input.consume('b');
         var idx = this.choiceIndex;
         var fn = this.onChoice;
         this.g.audio.sfx('menu_ok');
@@ -128,6 +132,7 @@ var LZ = LZ || {};
     }
 
     if (input.pressed('a') || input.pressed('b') || input.pressed('start')) {
+      input.consume('a'); input.consume('b'); input.consume('start');
       if (this.page < this.pages.length - 1) {
         this.page++;
         this._layout();

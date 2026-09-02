@@ -201,6 +201,11 @@ var LZ = LZ || {};
   Input.prototype.swallow = function () {
     for (var i = 0; i < BUTTONS.length; i++) this.prev[BUTTONS[i]] = this.state[BUTTONS[i]] = true;
   };
+  /* Consume one button's press edge for the rest of the frame. UI runs
+     before the world in the step order, so without this a single tap of A
+     both closes a message box and is then seen again by the player, who
+     talks to the same villager and reopens it -- forever. */
+  Input.prototype.consume = function (n) { this.prev[n] = this.state[n]; };
 
   Input.KEYS = DEFAULT_KEYS;
   Input.BUTTONS = BUTTONS;

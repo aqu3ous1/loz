@@ -93,55 +93,43 @@ var LZ = LZ || {};
       }
     }
 
-    /* ---- C buttons: round, gold, top right, as on the pad ----
-       Spacing has to clear the discs. At 320x240 an 11px radius on a 17px
-       pitch overlaps its neighbours, and any count printed inside lands on
-       the icon; the counts go in badges hung below the row instead. */
-    var cR = 9, cPitch = 21;
-    var cx = W - 12 - cPitch * 2 - cR, cy = 15;
-    var cLabels = ['\u25C0', '\u25BC', '\u25B6'];
-    var cPos = [[cx, cy], [cx + cPitch, cy + 7], [cx + cPitch * 2, cy]];
+    /* ---- item slots and action prompts, labelled with PC keys ----
+       These used to be N64 face buttons: gold C discs, a blue B and a green
+       A. Nobody playing this has that pad in their hands, so the prompts
+       name the key you actually press. The item slots stay square plates in
+       the top right, each with its key cap under it. */
+    var slotW = 26, slotPitch = 30;
+    var sx0 = W - 10 - slotPitch * 2 - slotW;
+    var sy0 = 12;
+    var slotKeys = ['1', '2', '3'];
     for (var s = 0; s < 3; s++) {
-      var bx = cPos[s][0], by = cPos[s][1];
-      ui.disc(bx, by, cR + 1.4, [0.10, 0.09, 0.06, 0.85]);
-      ui.disc(bx, by, cR, [0.86, 0.72, 0.16, 1]);
-      ui.disc(bx, by, cR * 0.84, [0.20, 0.18, 0.12, 0.9]);
+      var bx = sx0 + s * slotPitch, by = sy0;
+      keycapPlate(ui, bx, by, slotW, slotW);
       var id = inv.slots[s];
       if (id) {
         var d = Items.ITEMS[id];
-        ui.icon(d.icon, bx - 6, by - 6, 12);
+        ui.icon(d.icon, bx + (slotW - 16) / 2, by + 4, 16);
         if (d.ammo) {
           var cnt = String(inv[d.ammo] || 0);
           var cw = ui.measure(cnt) + 4;
-          var cbx = Math.round(bx - cw / 2);
-          ui.rect(cbx, by + cR + 1, cw, 9, [0.06, 0.05, 0.04, 0.88]);
-          ui.text(cnt, cbx + 2, by + cR + 3, [1, 0.96, 0.72, 1]);
+          ui.rect(bx + slotW - cw - 1, by + slotW - 10, cw, 9, [0.06, 0.05, 0.04, 0.9]);
+          ui.text(cnt, bx + slotW - cw + 1, by + slotW - 8, [1, 0.96, 0.72, 1]);
         }
-        if (inv.wornMask === id) ui.discOutline(bx, by, cR + 2, [0.4, 1, 0.6, 1]);
-      } else {
-        ui.textCentered(cLabels[s], bx, by - 4, [0.62, 0.54, 0.24, 1]);
+        if (inv.wornMask === id) ui.frame(bx - 1, by - 1, slotW + 2, slotW + 2, 1, [0.4, 1, 0.6, 1]);
       }
+      keycap(ui, Math.round(bx + (slotW - 12) / 2), by + slotW + 2, slotKeys[s]);
     }
 
-    /* ---- A and B: labelled round buttons, bottom right ---- */
-    var bbx = W - 30, bby = H - 62;
+    /* ---- action prompts, bottom right: "Attack [J]", "Jump [Space]" ---- */
     var wd0 = inv.weaponDef();
-    ui.disc(bbx, bby, 11, [0.05, 0.06, 0.12, 0.85]);
-    ui.disc(bbx, bby, 10, [0.28, 0.46, 0.92, 1]);
-    ui.disc(bbx, bby, 8.4, [0.10, 0.16, 0.34, 0.85]);
-    if (wd0) ui.icon(wd0.icon, bbx - 7, bby - 7, 14);
-    var bLabel = g.player && g.player.carry ? 'Throw' : (wd0 ? 'Attack' : '\u2014');
-    ui.textRight(bLabel, bbx - 14, bby - 4, [0.75, 0.85, 1, 1]);
-
-    var aax = W - 30, aay = H - 36;
+    var bLabel = g.player && g.player.carry ? 'Throw' : (wd0 ? 'Attack' : '—');
     var aLabel = (g.player && g.player.interact) ? (g.player.interact.actionLabel || 'Check')
       : (g.player && g.player.lockTarget && g.input.stickMag() > 0.35 ? 'Dodge'
         : (g.player && g.input.stickMag() > 0.35 ? 'Roll' : 'Jump'));
-    ui.disc(aax, aay, 11, [0.04, 0.10, 0.06, 0.85]);
-    ui.disc(aax, aay, 10, [0.26, 0.80, 0.42, 1]);
-    ui.disc(aax, aay, 8.4, [0.06, 0.24, 0.12, 0.85]);
-    ui.textCentered('A', aax, aay - 4, [0.85, 1, 0.9, 1]);
-    ui.textRight(aLabel, aax - 14, aay - 4, [0.78, 1, 0.86, 1]);
+    prompt(ui, W - 8, H - 58, bLabel, 'J', [0.80, 0.88, 1, 1]);
+    prompt(ui, W - 8, H - 42, aLabel, 'Space', [0.82, 1, 0.88, 1]);
+    if (g.player && g.player.guarding) prompt(ui, W - 8, H - 26, 'Guard', 'E', [1, 0.92, 0.72, 1]);
+    else if (g.player && g.player.lockTarget) prompt(ui, W - 8, H - 26, 'Release', 'Shift', [1, 0.92, 0.72, 1]);
 
     /* ---- lock-on reticle ---- */
     if (g.player && g.player.lockTarget) {
@@ -198,6 +186,33 @@ var LZ = LZ || {};
       ui.textCentered(g.bossBar.name, W / 2, by2 - 12, [1, 0.9, 0.75, 1]);
     }
   };
+
+  /* A key cap: a light face with a dark bevel down two sides, sized to its
+     legend. Drawn rather than iconified so any key name fits. */
+  function keycap(ui, x, y, label, col) {
+    /* Dark plate, pale rim, pale legend. A light cap with dark text is what
+       a real keyboard looks like, but at 320x240 through a composite blur
+       small dark glyphs on a light field smear into illegibility; every
+       other reading on this HUD is light-on-dark for the same reason. */
+    var w = Math.max(12, ui.measure(label) + 8);
+    ui.rect(x, y, w, 12, [0.07, 0.07, 0.10, 0.94]);
+    ui.frame(x, y, w, 12, 1, [0.66, 0.68, 0.78, 1]);
+    ui.rect(x + 1, y + 1, w - 2, 1, [0.34, 0.35, 0.42, 1]);
+    ui.text(label, x + 4, y + 3, col || [0.90, 0.92, 1, 1]);
+    return w;
+  }
+  /* the recessed plate an item icon sits in */
+  function keycapPlate(ui, x, y, w, h) {
+    ui.rect(x, y, w, h, [0.08, 0.08, 0.11, 0.88]);
+    ui.frame(x, y, w, h, 1, [0.62, 0.64, 0.72, 1]);
+    ui.rect(x + 1, y + 1, w - 2, 1, [0.30, 0.31, 0.36, 1]);
+  }
+  /* "<verb> [key]", right-aligned to rx */
+  function prompt(ui, rx, y, label, key, col) {
+    var kw = Math.max(12, ui.measure(key) + 8);
+    keycap(ui, rx - kw, y, key);
+    ui.textRight(label, rx - kw - 5, y + 3, col);
+  }
 
   HUD.prototype._drawReticle = function (ui, target) {
     var g = this.g;

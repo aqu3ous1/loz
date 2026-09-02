@@ -212,10 +212,13 @@ var LZ = LZ || {};
   /* direction the player should move for a given stick input */
   Camera.prototype.stickToWorld = function (sx, sy, out) {
     var c = Math.cos(this.yaw), s = Math.sin(this.yaw);
-    /* camera forward on the ground plane is -(sin yaw, cos yaw) */
-    out[0] = -s * sy + -c * sx;
+    /* Camera forward on the ground plane is (-sin yaw, -cos yaw); its right
+       is that turned a quarter turn clockwise, (cos yaw, -sin yaw). Both
+       sx terms used to carry the wrong sign, which swapped left and right
+       for every camera angle. */
+    out[0] = -s * sy + c * sx;
     out[1] = 0;
-    out[2] = -c * sy + s * sx;
+    out[2] = -c * sy - s * sx;
     return out;
   };
 
