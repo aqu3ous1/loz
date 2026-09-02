@@ -65,8 +65,10 @@ camera on an enemy and switches you to strafing.
 
 ## What's in it
 
-- **31 areas**: four settlements, seven overworld regions, six dungeons, seven
-  grottos, four shops and the interiors.
+- **54 areas**: four settlements, seven overworld regions, six dungeons, seven
+  grottos, four shops, and a furnished interior behind every single door.
+  There is no building you can walk at and pass through — twenty-three homes,
+  each with a resident who has something to say about what is happening.
 - **6 dungeons**, each with a key item, a map of locked rooms and switches, and a
   boss: the **Emberhusk** in Ashvale Mine, **Genmo unmastered** in the Stonebell
   clock tower, **Thornheart** in Elderwood Grove, **Tidewrought** in Lake Nial,
@@ -136,7 +138,7 @@ port 8080 first.
 
 ```sh
 node tools/playtest.js    # boot, new game, prologue, first steps; screenshots
-node tools/deepplay.js    # load all 31 areas; report draws, tris, fps, errors
+node tools/deepplay.js    # load every area; report draws, tris, fps, errors
 node tools/tour.js        # gameplay screenshots at named stops (STOPS=...)
 node tools/modelshot.js   # pose a character or boss against a fixed camera (RIGS=...)
 node tools/combat.js      # drive real input: hits, damage, bombs, bosses, pickups
@@ -144,6 +146,7 @@ node tools/story.js       # walk the main story chain through its own triggers
 node tools/tex.js         # render every texture at 4x with its colour count (TEX=...)
 node tools/move.js        # assert every movement key against three camera angles
 node tools/ui.js          # assert the message box and menu open once and close once
+node tools/doors.js       # every door resolves, every interior leads back, walk one through
 ```
 
 Screenshots land in `shots/`. `tools/load.js` evaluates the browser sources in
@@ -158,7 +161,8 @@ src/render/         shaders, bitmap font, HUD icons, sprite batcher
 src/game/           actors, animation, collision, camera, player, enemies,
                     bosses, NPCs, items, inventory, dialogue, HUD, menu,
                     save, quest, cutscene script, world
-src/game/areas/     the 31 areas, plus kit.js: the level-building vocabulary
+src/game/areas/     the areas, homes.js for the interiors, kit.js for the
+                    level-building vocabulary
 src/main.js         game loop, state machine, area transitions
 tools/              headless test and screenshot harnesses
 ```

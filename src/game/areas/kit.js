@@ -608,6 +608,12 @@ var LZ = LZ || {};
       x0: (o.doorAt === undefined ? 0 : o.doorAt) - 0.9, x1: (o.doorAt === undefined ? 0 : o.doorAt) + 0.9,
       z0: d / 2 - 0.4, z1: d / 2 + 1.2, to: o.exitTo, entry: o.exitEntry || 'default'
     });
+    /* Tell the camera where the room is. The doorway is a gap in the south
+       wall, so the camera's collision ray goes straight out through it when
+       the player stands near the exit and you end up looking at the room
+       from outside its own walls. */
+    ctx.world.roomBounds = { x0: -w / 2 + 0.5, x1: w / 2 - 0.5,
+                             z0: -d / 2 + 0.5, z1: d / 2 - 0.5, y1: h - 0.4 };
     return { w: w, d: d, h: h };
   };
 

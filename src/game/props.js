@@ -518,8 +518,16 @@ var LZ = LZ || {};
     roof.setMatrix(null);
 
     if (b.col) {
-      /* solid shell with a walk-through doorway */
+      /* A sealed shell. The doorway used to be left open in the collider,
+         which meant that on any house without a transition on it you walked
+         straight through the door and stood inside an empty box looking at
+         the back of its own walls. Entrances are Door actors standing
+         outside the wall, so nothing needs to walk through the gap. */
       var pushX = function (lx, lz) { return [x + lx * cs + lz * sn, z + lx * -sn + lz * cs]; };
+      if (o.open !== true) {
+        var dr = pushX(0, hd - t / 2);
+        b.col.add(C.box(dr[0], y + doorH / 2, dr[1], doorW / 2 + 0.02, doorH / 2, t / 2, { yaw: yaw }));
+      }
       var back = pushX(0, -hd + t / 2);
       b.col.add(C.box(back[0], y + h / 2, back[1], w / 2, h / 2, t / 2, { yaw: yaw }));
       var left = pushX(-hw + t / 2, 0);

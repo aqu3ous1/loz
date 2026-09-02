@@ -146,6 +146,23 @@ var LZ = LZ || {};
           this.yaw = M.angleDamp(this.yaw, player.yaw + Math.PI, 0.9, dt);
         }
       }
+      /* Indoors, shorten the leash instead of shoving the camera around.
+         Five metres of pull-back has nowhere to go in a room eight metres
+         across, and clamping the position afterwards just presses the lens
+         against the back of the player's head. Cast from the player to the
+         room wall along the camera's own bearing and take what fits. */
+      var wantD = this.wantDist;
+      if (world && world.roomBounds) {
+        var rb0 = world.roomBounds;
+        var bx = Math.sin(this.yaw), bz = Math.cos(this.yaw);
+        var lim = 1e9;
+        if (bx > 0.001) lim = Math.min(lim, (rb0.x1 - _focus[0]) / bx);
+        else if (bx < -0.001) lim = Math.min(lim, (rb0.x0 - _focus[0]) / bx);
+        if (bz > 0.001) lim = Math.min(lim, (rb0.z1 - _focus[2]) / bz);
+        else if (bz < -0.001) lim = Math.min(lim, (rb0.z0 - _focus[2]) / bz);
+        wantD = M.clamp(Math.min(wantD, lim - 0.2), 1.7, this.wantDist);
+      }
+      this.dist = this._instant ? wantD : M.damp(this.dist, wantD, 8, dt);
       var cpitch = Math.cos(this.pitch);
       V3.set(_desired,
         _focus[0] + Math.sin(this.yaw) * this.dist * cpitch,
@@ -178,6 +195,16 @@ var LZ = LZ || {};
       /* never sink below the ground */
       var gh = world.groundHeight(_desired[0], _desired[2]) + 0.45;
       if (_desired[1] < gh) _desired[1] = gh;
+      /* Indoors, keep the camera in the room. A doorway is a gap in a wall,
+         and the collision ray goes straight through it. */
+      var rb = world.roomBounds;
+      if (rb) {
+        _desired[0] = M.clamp(_desired[0], rb.x0, rb.x1);
+        _desired[2] = M.clamp(_desired[2], rb.z0, rb.z1);
+        if (rb.y1 !== undefined && _desired[1] > _focus[1] + rb.y1) {
+          _desired[1] = _focus[1] + rb.y1;
+        }
+      }
     }
 
     var lam = this._instant ? 1e6 : (this.mode === 'lock' ? 12 : 7.5);

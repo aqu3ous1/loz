@@ -135,7 +135,7 @@ var LZ = LZ || {};
         roof: 'thatch', trim: 'planksDark', roofH: 1.7
       });
       K.groundShadow(ctx, 0, -18, 4.0, 3.6, { strength: 0.34 });
-      K.door(ctx, { x: h1.doorX, z: h1.doorZ, to: 'linkHouse', entry: 'default', label: 'Enter' });
+      K.door(ctx, { x: h1.doorX, z: h1.doorZ, yaw: h1.doorYaw, to: 'linkHouse', entry: 'default', label: 'Enter' });
 
       /* neighbours */
       var houses = [
@@ -144,11 +144,15 @@ var LZ = LZ || {};
       for (var i = 0; i < houses.length; i++) {
         var hx = houses[i][0], hz = houses[i][1];
         K.groundShadow(ctx, hx, hz, 3.6, 3.3, { strength: 0.34 });
-        P.house(ctx.batch, hx, w.groundHeight(hx, hz), hz, {
+        var nh = P.house(ctx.batch, hx, w.groundHeight(hx, hz), hz, {
           w: 5 + (i % 2), d: 4.6, h: 2.8, yaw: houses[i][2],
           wall: 'plaster', wallColor: [0xe0d0b0, 0xd8ccb8, 0xe8dcc0][i % 3],
           roof: i % 2 ? 'shingleRed' : 'thatch', trim: 'planksDark', roofH: 1.5
         });
+        /* every door in this town leads somewhere */
+        var nid = LZ.Homes.farrow[i];
+        K.door(ctx, { x: nh.doorX, z: nh.doorZ, yaw: nh.doorYaw, to: nid, entry: 'default',
+          label: LZ.Homes.name(nid) });
       }
 
       K.groundShadow(ctx, 4, 2, 1.4, 1.4, { strength: 0.36 });
@@ -375,27 +379,31 @@ var LZ = LZ || {};
         w: 6.5, d: 5.4, h: 3.0, yaw: 1.2, wall: 'stoneblock', roof: 'shingleGrey',
         trim: 'planksDark', roofH: 1.4
       });
-      K.door(ctx, { x: sm.doorX, z: sm.doorZ, to: 'smithy', entry: 'default', label: "Doram's Forge" });
+      K.door(ctx, { x: sm.doorX, z: sm.doorZ, yaw: sm.doorYaw, to: 'smithy', entry: 'default', label: "Doram's Forge" });
       var cm2 = P.house(ctx.batch, 13, w.groundHeight(13, -2), -2, {
         w: 5.2, d: 4.4, h: 2.7, yaw: -1.2, wall: 'plaster', wallColor: 0xd8b878,
         roof: 'shingleRed', trim: 'planks', roofH: 1.3
       });
-      K.door(ctx, { x: cm2.doorX, z: cm2.doorZ, to: 'bexilShop', entry: 'default', label: "Bexil's Workshop" });
+      K.door(ctx, { x: cm2.doorX, z: cm2.doorZ, yaw: cm2.doorYaw, to: 'bexilShop', entry: 'default', label: "Bexil's Workshop" });
 
       /* general store */
       var st = P.house(ctx.batch, -10, w.groundHeight(-10, 12), 12, {
         w: 6, d: 5, h: 2.9, yaw: 2.6, wall: 'plaster', wallColor: 0xc8d4e0,
         roof: 'shingleBlue', trim: 'planksDark', roofH: 1.4
       });
-      K.door(ctx, { x: st.doorX, z: st.doorZ, to: 'stoneShop', entry: 'default', label: 'General Store' });
+      K.door(ctx, { x: st.doorX, z: st.doorZ, yaw: st.doorYaw, to: 'stoneShop', entry: 'default', label: 'General Store' });
 
       /* town dressing */
       var houses2 = [[16, 12, -2.2], [-20, -14, 0.7], [20, -14, -0.7], [8, 18, 3.0], [-16, 20, 0.3]];
       for (var i = 0; i < houses2.length; i++) {
-        P.house(ctx.batch, houses2[i][0], w.groundHeight(houses2[i][0], houses2[i][1]), houses2[i][1], {
+        var sh = P.house(ctx.batch, houses2[i][0], w.groundHeight(houses2[i][0], houses2[i][1]), houses2[i][1], {
           w: 5, d: 4.4, h: 2.9, yaw: houses2[i][2], wall: 'stoneblock',
           roof: i % 2 ? 'shingleRed' : 'shingleGrey', trim: 'planksDark', roofH: 1.4, windows: true
         });
+        K.groundShadow(ctx, houses2[i][0], houses2[i][1], 3.4, 3.1, { strength: 0.34 });
+        var sid = LZ.Homes.stonebell[i];
+        K.door(ctx, { x: sh.doorX, z: sh.doorZ, yaw: sh.doorYaw, to: sid, entry: 'default',
+          label: LZ.Homes.name(sid) });
       }
       for (var l = 0; l < 6; l++) {
         var a = l / 6 * Math.PI * 2;
@@ -578,17 +586,21 @@ var LZ = LZ || {};
         [-8, 16, 2.9], [9, 16, -2.9], [-18, -2, 1.4], [18, -2, -1.4]
       ];
       for (var i = 0; i < blocks.length; i++) {
-        P.house(ctx.batch, blocks[i][0], w.groundHeight(blocks[i][0], blocks[i][1]), blocks[i][1], {
+        var bh = P.house(ctx.batch, blocks[i][0], w.groundHeight(blocks[i][0], blocks[i][1]), blocks[i][1], {
           w: 5.4, d: 5.0, h: 3.2, yaw: blocks[i][2],
           wall: 'sandstone', roof: 'sandstone', roofStyle: 'flat',
           trim: 'planksPale', eaves: 0.3, windows: i % 2 === 0
         });
+        K.groundShadow(ctx, blocks[i][0], blocks[i][1], 3.6, 3.4, { strength: 0.36 });
+        var bid = LZ.Homes.hanman[i];
+        K.door(ctx, { x: bh.doorX, z: bh.doorZ, yaw: bh.doorYaw, to: bid, entry: 'default',
+          label: LZ.Homes.name(bid) });
       }
       var shop = P.house(ctx.batch, -6, w.groundHeight(-6, -14), -14, {
         w: 6, d: 5, h: 3.0, yaw: 0.2, wall: 'sandstone', roof: 'sandstone', roofStyle: 'flat',
         trim: 'planksPale'
       });
-      K.door(ctx, { x: shop.doorX, z: shop.doorZ, to: 'hanmanShop', entry: 'default', label: 'Caravan Goods' });
+      K.door(ctx, { x: shop.doorX, z: shop.doorZ, yaw: shop.doorYaw, to: 'hanmanShop', entry: 'default', label: 'Caravan Goods' });
 
       P.stall(ctx.batch, -5, w.groundHeight(-5, 3), 3, { yaw: 0.5, awning: 'clothRed' });
       P.stall(ctx.batch, 5, w.groundHeight(5, 3), 3, { yaw: -0.5, awning: 'clothBlue' });
@@ -734,15 +746,19 @@ var LZ = LZ || {};
 
       var houses = [[-12, 2, 0.4], [12, 0, -0.4], [-10, 14, 0.8], [11, 13, -0.8], [0, 20, 3.1]];
       for (var i = 0; i < houses.length; i++) {
-        P.house(ctx.batch, houses[i][0], w.groundHeight(houses[i][0], houses[i][1]), houses[i][1], {
+        var ah = P.house(ctx.batch, houses[i][0], w.groundHeight(houses[i][0], houses[i][1]), houses[i][1], {
           w: 5.4, d: 4.6, h: 2.9, yaw: houses[i][2], wall: 'planksDark',
           roof: 'shingleGrey', trim: 'planks', roofH: 1.6
         });
+        K.groundShadow(ctx, houses[i][0], houses[i][1], 3.6, 3.2, { strength: 0.36 });
+        var aid = LZ.Homes.ashvale[i];
+        K.door(ctx, { x: ah.doorX, z: ah.doorZ, yaw: ah.doorYaw, to: aid, entry: 'default',
+          label: LZ.Homes.name(aid) });
       }
       var sup = P.house(ctx.batch, 8, w.groundHeight(8, 8), 8, {
         w: 6, d: 5, h: 3.0, yaw: -1.0, wall: 'planksDark', roof: 'shingleGrey', trim: 'planks'
       });
-      K.door(ctx, { x: sup.doorX, z: sup.doorZ, to: 'ashShop', entry: 'default', label: 'Ashvale Supply' });
+      K.door(ctx, { x: sup.doorX, z: sup.doorZ, yaw: sup.doorYaw, to: 'ashShop', entry: 'default', label: 'Ashvale Supply' });
 
       for (var t = 0; t < 6; t++) {
         var a = t / 6 * Math.PI * 2;

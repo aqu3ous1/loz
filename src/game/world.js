@@ -86,6 +86,7 @@ var LZ = LZ || {};
     this.light = env.light || null;
     this.music = env.music || area.music || null;
     this.indoor = !!env.indoor;
+    this.roomBounds = null;
 
     this.bakeTerrain();
 
