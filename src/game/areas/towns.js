@@ -134,6 +134,7 @@ var LZ = LZ || {};
         w: 6, d: 5.4, h: 3.0, yaw: 0, wall: 'plaster', wallColor: 0xe0d0b0,
         roof: 'thatch', trim: 'planksDark', roofH: 1.7
       });
+      K.groundShadow(ctx, 0, -18, 4.0, 3.6, { strength: 0.34 });
       K.door(ctx, { x: h1.doorX, z: h1.doorZ, to: 'linkHouse', entry: 'default', label: 'Enter' });
 
       /* neighbours */
@@ -142,6 +143,7 @@ var LZ = LZ || {};
       ];
       for (var i = 0; i < houses.length; i++) {
         var hx = houses[i][0], hz = houses[i][1];
+        K.groundShadow(ctx, hx, hz, 3.6, 3.3, { strength: 0.34 });
         P.house(ctx.batch, hx, w.groundHeight(hx, hz), hz, {
           w: 5 + (i % 2), d: 4.6, h: 2.8, yaw: houses[i][2],
           wall: 'plaster', wallColor: [0xe0d0b0, 0xd8ccb8, 0xe8dcc0][i % 3],
@@ -149,6 +151,7 @@ var LZ = LZ || {};
         });
       }
 
+      K.groundShadow(ctx, 4, 2, 1.4, 1.4, { strength: 0.36 });
       P.well(ctx.batch, 4, w.groundHeight(4, 2), 2);
       P.fence(ctx.batch, -22, -14, -22, 14, w.groundHeight(-22, 0), {});
       P.fence(ctx.batch, 22, -14, 22, 14, w.groundHeight(22, 0), {});
@@ -194,6 +197,39 @@ var LZ = LZ || {};
           }
         }
       });
+
+      /* Village dressing. A screen of this game used to hold four objects
+         and the games it is imitating hold thirty; most of the difference
+         is stuff people put down and never picked up. */
+      var dress = [
+        ['woodpile', -8.6, -15.5, 0.3], ['woodpile', 13.6, -6.2, -1.1],
+        ['sack', -6.2, -14.2, 0.5], ['sack', -5.6, -13.6, 2.1], ['sack', 9.2, 12.6, 0.8],
+        ['sack', 5.6, -15.2, 1.4],
+        ['crate', 6.8, 4.2, 0.4], ['crate', 7.4, 4.9, 1.9], ['crate', -14.6, 10.4, 0.2],
+        ['barrel', -3.2, -16.0, 0], ['barrel', -2.4, -16.4, 0], ['barrel', 12.8, 12.4, 0],
+        ['barrel', -12.2, -4.6, 0]
+      ];
+      for (var di = 0; di < dress.length; di++) {
+        var dd = dress[di];
+        var dy = w.groundHeight(dd[1], dd[2]);
+        P[dd[0]](ctx.batch, dd[1], dy, dd[2], { yaw: dd[3], scale: 0.9 + (di % 3) * 0.08 });
+        K.groundShadow(ctx, dd[1], dd[2], 0.62, 0.62, { strength: 0.34 });
+      }
+      P.cart(ctx.batch, 8.4, w.groundHeight(8.4, -1.2), -1.2, { yaw: 1.1 });
+      K.groundShadow(ctx, 8.4, -1.2, 1.5, 1.2, { strength: 0.34 });
+      P.laundry(ctx.batch, -10.4, w.groundHeight(-10.4, 12.2), 12.2, 4.4, { yaw: 0.4 });
+      P.planter(ctx.batch, -1.7, w.groundHeight(-1.7, -15.3), -15.3, { yaw: 0 });
+      P.planter(ctx.batch, 1.7, w.groundHeight(1.7, -15.3), -15.3, { yaw: 0, bloom: 0xc8d8f0 });
+      /* a few lamp posts along the lane */
+      var lamps = [[-3.4, 4], [3.4, 12], [-3.4, 20]];
+      for (var li = 0; li < lamps.length; li++) {
+        P.lampPost(ctx.batch, lamps[li][0], w.groundHeight(lamps[li][0], lamps[li][1]), lamps[li][1], {});
+        K.groundShadow(ctx, lamps[li][0], lamps[li][1], 0.5, 0.5, { strength: 0.32 });
+      }
+      /* fences enclosing two of the yards */
+      P.fence(ctx.batch, -16.5, 4.5, -16.5, 12.5, w.groundHeight(-16.5, 8), {});
+      P.fence(ctx.batch, -16.5, 12.5, -9.5, 12.5, w.groundHeight(-13, 12.5), {});
+      P.fence(ctx.batch, 16.5, 4.5, 16.5, 14.5, w.groundHeight(16.5, 9), {});
 
       K.sign(ctx, 2.2, 20, 'FARROW VILLAGE\n  south - Yeld Plains\n  Please close the gate.', Math.PI);
       K.hintStone(ctx, -6, -12, null);

@@ -260,6 +260,11 @@ var LZ = LZ || {};
       self._m('spark', 'spark', { blend: 'add', lit: false, fog: false, cull: 'none', depthWrite: false, queue: 10 });
       self._m('ring', 'ring', { blend: 'add', lit: false, fog: false, cull: 'none', depthWrite: false, queue: 10 });
       self._m('slash', 'slash', { blend: 'add', lit: false, fog: false, cull: 'none', depthWrite: false, queue: 10 });
+      /* Static contact shadows for scenery. Separate from the actor blob so
+         it can be fogged and depth-offset without dragging moving shadows
+         with it. */
+      self._m('shadowSoft', 'dot', { blend: 'alpha', lit: false, fog: true, cull: 'none',
+        depthWrite: false, depthOffset: -3, queue: 3, prim: [0, 0, 0, 1] });
       self._m('shadow', 'dot', { blend: 'alpha', lit: false, fog: true, cull: 'none', depthWrite: false, depthOffset: -2, queue: 2, prim: [0, 0, 0, 0.42] });
       self._m('white', 'white', {});
       self._m('flat', 'white', { lit: false, fog: false });

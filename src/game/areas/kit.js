@@ -152,6 +152,46 @@ var LZ = LZ || {};
     });
   };
 
+  /* ------------------------------------------------------------------ */
+  /* Contact shadows                                                     */
+  /*                                                                     */
+  /* Nothing in this world was casting one, and that is what made houses
+     and trees read as decals standing ON the ground rather than objects
+     sitting IN it. The era's answer was a painted dark patch under every
+     large object, conformed to the terrain -- so that is what this is: a
+     small grid sampling ground height, alpha falling off to the rim.      */
+  /* ------------------------------------------------------------------ */
+  K.groundShadow = function (ctx, x, z, rx, rz, o) {
+    o = o || {};
+    var w = ctx.world;
+    var mb = ctx.batch.mb('shadowSoft');
+    var N = o.segs || 2;
+    var strength = o.strength === undefined ? 0.38 : o.strength;
+    var lift = o.lift === undefined ? 0.035 : o.lift;
+    var offX = o.offX === undefined ? rx * 0.10 : o.offX;   /* cast away from the sun */
+    var offZ = o.offZ === undefined ? rz * 0.12 : o.offZ;
+    var grid = [];
+    for (var j = 0; j <= N; j++) {
+      var row = [];
+      for (var i = 0; i <= N; i++) {
+        var u = i / N * 2 - 1, v = j / N * 2 - 1;
+        var px = x + offX + u * rx, pz = z + offZ + v * rz;
+        /* round falloff, and nothing at the corners */
+        var d = Math.sqrt(u * u + v * v);
+        var a = strength * (1 - M.smoothstep(0.10, 0.95, d));
+        row.push(mb.vert(px, w.groundHeight(px, pz) + lift, pz, 0, 1, 0,
+          i / N, j / N, [1, 1, 1, a]));
+      }
+      grid.push(row);
+    }
+    for (var jj = 0; jj < N; jj++) {
+      for (var ii = 0; ii < N; ii++) {
+        mb.i.push(grid[jj][ii], grid[jj + 1][ii], grid[jj + 1][ii + 1]);
+        mb.i.push(grid[jj][ii], grid[jj + 1][ii + 1], grid[jj][ii + 1]);
+      }
+    }
+  };
+
   K.forest = function (ctx, o) {
     var w = ctx.world;
     K.scatter({
@@ -162,11 +202,18 @@ var LZ = LZ || {};
       var kind = o.kind || 'tree';
       if (kind === 'mixed') kind = rng.chance(0.55) ? 'tree' : 'pine';
       var fn = LZ.Props[kind] || LZ.Props.tree;
+      var sc = rng.range(o.minScale || 0.85, o.maxScale || 1.35);
       fn(ctx.batch, x, y, z, {
-        scale: rng.range(o.minScale || 0.85, o.maxScale || 1.35),
+        scale: sc,
         seed: rng.int(0, 9999),
         leafMat: o.leafMat, leafColor: o.leafColor, barkMat: o.barkMat
       });
+      if (o.shadow !== false) {
+        /* tight: these are alpha-blended fill, and a forest of them
+           overlapping is the most expensive thing on the screen */
+        K.groundShadow(ctx, x, z, sc * (kind === 'pine' ? 0.85 : 1.10),
+          sc * (kind === 'pine' ? 0.85 : 1.10), { strength: 0.42 });
+      }
     });
   };
 
@@ -177,9 +224,11 @@ var LZ = LZ || {};
       minDist: o.minDist || 2.4, filter: o.filter
     }, function (x, z, rng) {
       var y = w.groundHeight(x, z);
+      var sc = rng.range(0.5, 1.3);
       LZ.Props.rock(ctx.batch, x, y, z, {
-        scale: rng.range(0.5, 1.3), seed: rng.int(0, 9999), mat: o.mat || 'rock', color: o.color
+        scale: sc, seed: rng.int(0, 9999), mat: o.mat || 'rock', color: o.color
       });
+      if (o.shadow !== false) K.groundShadow(ctx, x, z, sc * 0.66, sc * 0.66, { strength: 0.40 });
     });
   };
 

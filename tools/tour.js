@@ -56,7 +56,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
       if (st.pos) { g.player.pos[0] = st.pos[0]; g.player.pos[1] = st.pos[1]; g.player.pos[2] = st.pos[2]; }
       if (st.yaw !== undefined) { g.player.yaw = st.yaw; g.player.targetYaw = st.yaw; }
       g.cam.yaw = (st.camYaw === undefined ? g.player.yaw + Math.PI : st.camYaw);
-      g.cam.pitch = st.pitch === undefined ? 0.26 : st.pitch;
+      g.cam.pitch = st.pitch === undefined ? 0.17 : st.pitch;
       g.cam.snapBehind(g.player);
       g.cam.yaw = (st.camYaw === undefined ? g.player.yaw + Math.PI : st.camYaw);
       g.hud.areaTimer = 0;

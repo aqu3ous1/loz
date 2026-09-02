@@ -47,19 +47,21 @@ whole.
 | Action | Keyboard | Gamepad |
 | --- | --- | --- |
 | Move | `W A S D` | Left stick |
-| Camera | Arrow keys | Right stick |
-| Sword / attack | `J` or `X` | B (west) |
-| Context action, roll, jump | `Space` | A (south) |
-| Shield | `E` | R |
-| Z-target | `Shift` | ZL/ZR |
-| C-items | `1` `2` `3` `4` | Face/shoulder buttons |
+| Camera | Arrow keys / mouse | Right stick |
+| Attack | `J` or `X` | West face |
+| Action, roll, jump | `Space` | South face |
+| Shield | `E` | Right shoulder |
+| Target lock | `Shift` | Trigger |
+| Item slots | `1` `2` `3` | Face / shoulder |
+| Ocarina | `4` | — |
 | Swap weapon | `Tab` | — |
 | Menu | `Enter` | Start |
 
-The control model is the 1998 one, deliberately: context-sensitive A whose verb
-changes with what you are standing near, sword on B, shield on R, Z-targeting
-that locks the camera and switches you to strafing, and three assignable C-item
-slots. The A-button label in the corner always tells you what A will do.
+The control model is the 1998 one, but the on-screen prompts name the key you
+actually press, not a controller nobody has in their hands. `Space` is
+context-sensitive and its verb changes with what you are standing near — the
+prompt in the corner always tells you what it will do. Target lock holds the
+camera on an enemy and switches you to strafing.
 
 ## What's in it
 
@@ -140,6 +142,8 @@ node tools/modelshot.js   # pose a character or boss against a fixed camera (RIG
 node tools/combat.js      # drive real input: hits, damage, bombs, bosses, pickups
 node tools/story.js       # walk the main story chain through its own triggers
 node tools/tex.js         # render every texture at 4x with its colour count (TEX=...)
+node tools/move.js        # assert every movement key against three camera angles
+node tools/ui.js          # assert the message box and menu open once and close once
 ```
 
 Screenshots land in `shots/`. `tools/load.js` evaluates the browser sources in

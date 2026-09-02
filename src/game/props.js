@@ -51,15 +51,17 @@ var LZ = LZ || {};
        the tell that a tree was placed by a loop rather than grown */
     var lean = (rnd(seed + 41) - 0.5) * 0.30 * s;
     var lz2 = (rnd(seed + 43) - 0.5) * 0.30 * s;
+    /* Budget matters here more than anywhere else: a field holds seventy of
+       these, and an N64 tree was well under a hundred triangles. Five sides
+       on the trunk and three rings on a crown blob is the whole allowance. */
     bark.tube([
       { x: x, y: y - 0.05, z: z, r: trunkR * 1.85 },
-      { x: x, y: y + trunkH * 0.10, z: z, r: trunkR * 1.30 },
-      { x: x + lean * 0.35, y: y + trunkH * 0.45, z: z + lz2 * 0.35, r: trunkR * 1.02 },
-      { x: x + lean * 0.80, y: y + trunkH * 0.80, z: z + lz2 * 0.80, r: trunkR * 0.86 },
-      { x: x + lean, y: y + trunkH, z: z + lz2, r: trunkR * 0.72 }
-    ], 7, { v: 0.7, capStart: false });
+      { x: x, y: y + trunkH * 0.14, z: z, r: trunkR * 1.22 },
+      { x: x + lean * 0.55, y: y + trunkH * 0.60, z: z + lz2 * 0.55, r: trunkR * 0.96 },
+      { x: x + lean, y: y + trunkH, z: z + lz2, r: trunkR * 0.74 }
+    ], 5, { v: 0.7, capStart: false });
     /* limbs curving up and out of the trunk */
-    var limbs = 3 + Math.floor(rnd(seed + 1) * 2);
+    var limbs = 2 + Math.floor(rnd(seed + 1) * 2);
     for (var i = 0; i < limbs; i++) {
       var a = (i / limbs) * M.TAU + rnd(seed + i * 3) * 0.9;
       var lh = trunkH * (0.52 + rnd(seed + i * 5) * 0.26);
@@ -68,11 +70,9 @@ var LZ = LZ || {};
       bark.tube([
         { x: x + lean * 0.5 + sa * trunkR * 0.7, y: y + lh, z: z + lz2 * 0.5 + ca * trunkR * 0.7,
           r: trunkR * 0.52 },
-        { x: x + lean * 0.6 + sa * len, y: y + lh + len * 0.55, z: z + lz2 * 0.6 + ca * len,
-          r: trunkR * 0.34 },
-        { x: x + lean * 0.7 + sa * len * 1.7, y: y + lh + len * 1.05,
-          z: z + lz2 * 0.7 + ca * len * 1.7, r: trunkR * 0.16 }
-      ], 5);
+        { x: x + lean * 0.7 + sa * len * 1.5, y: y + lh + len * 0.95,
+          z: z + lz2 * 0.7 + ca * len * 1.5, r: trunkR * 0.18 }
+      ], 4);
     }
     /* Crown: a wide, slightly flattened cluster rather than one ball. The
        era's trees read as a mass of foliage sitting low over the branches. */
@@ -81,8 +81,8 @@ var LZ = LZ || {};
     var cy = y + trunkH * 0.94;
     var R = (1.20 + rnd(seed + 9) * 0.45) * s;
     var tipX = x + lean, tipZ = z + lz2;
-    leaf.ovoid(tipX, cy + R * 0.44, tipZ, R * 1.06, R * 0.80, R * 1.02, 9, 6);
-    var blobs = o.blobs === undefined ? 4 : o.blobs;
+    leaf.ovoid(tipX, cy + R * 0.44, tipZ, R * 1.06, R * 0.80, R * 1.02, 7, 4);
+    var blobs = o.blobs === undefined ? 3 : o.blobs;
     for (var k = 0; k < blobs; k++) {
       var ba = (k / blobs) * M.TAU + rnd(seed + 20 + k) * 0.8;
       var br = R * (0.56 + rnd(seed + 26 + k) * 0.22);
@@ -90,7 +90,7 @@ var LZ = LZ || {};
       leaf.ovoid(tipX + Math.sin(ba) * br,
         cy + R * (0.16 + rnd(seed + 30 + k) * 0.46),
         tipZ + Math.cos(ba) * br,
-        bs, bs * 0.82, bs, 8, 5);
+        bs, bs * 0.82, bs, 6, 3);
     }
     if (o.collide !== false && b.col) {
       b.col.add(C.cyl(x, y, z, trunkR * 1.5, trunkH, { surface: 'wood' }));
@@ -104,7 +104,7 @@ var LZ = LZ || {};
     var h = (3.2 + rnd(seed) * 1.8) * s;
     var bark = b.mb('barkPine');
     bark.setColorHex(0xffffff);
-    bark.cylinder(x, y, z, 0.20 * s, 0.10 * s, h, 5, false, 1.6);
+    bark.cylinder(x, y, z, 0.20 * s, 0.10 * s, h, 4, false, 1.6);
     var leaf = b.mb(o.leafMat || 'pine');
     leaf.setColorHex(o.leafColor === undefined ? 0xffffff : o.leafColor);
     var tiers = 4;
@@ -112,7 +112,7 @@ var LZ = LZ || {};
       var t = i / tiers;
       var yy = y + h * (0.22 + t * 0.66);
       var r = (1.15 - t * 0.78) * s;
-      leaf.cylinder(x, yy, z, r, r * 0.16, h * 0.30, 7, true, 1.1);
+      leaf.cylinder(x, yy, z, r, r * 0.16, h * 0.30, 6, true, 1.1);
     }
     if (b.col) b.col.add(C.cyl(x, y, z, 0.30 * s, h * 0.8, { surface: 'wood' }));
   };
@@ -422,6 +422,46 @@ var LZ = LZ || {};
     }
     trim.setMatrix(null);
 
+    /* A doorstep and two porch posts. Buildings that meet the ground with
+       nothing at the join read as boxes dropped on a field; a step and a
+       lintel are what make a wall a house. */
+    if (o.step !== false) {
+      trim.setColorHex(o.stepColor === undefined ? 0xbdb3a0 : o.stepColor);
+      trim.setMatrix(m);
+      trim.box(0, 0.09, hd + 0.34, doorW + 0.9, 0.18, 0.78, 1.6);
+      trim.box(0, 0.24, hd + 0.20, doorW + 0.6, 0.14, 0.50, 1.6);
+      trim.setColorHex(o.trimColor === undefined ? 0xffffff : o.trimColor);
+      /* porch posts either side of the door, carrying a small lintel */
+      if (o.porch !== false) {
+        var pyH = doorH + 0.55;
+        for (var pp = -1; pp <= 1; pp += 2) {
+          trim.tube([
+            { x: pp * (doorW * 0.5 + 0.62), y: 0.14, z: hd + 0.56, r: 0.10 },
+            { x: pp * (doorW * 0.5 + 0.62), y: pyH, z: hd + 0.56, r: 0.085 }
+          ], 6, { u: 1, v: 3 });
+        }
+        trim.box(0, pyH + 0.08, hd + 0.42, doorW + 1.5, 0.16, 0.44, 2.2);
+        trim.box(0, pyH + 0.22, hd + 0.28, doorW + 1.3, 0.12, 0.30, 2.2);
+      }
+      trim.setMatrix(null);
+    }
+
+    /* a chimney on one gable end, with a wisp of soot at the lip */
+    if (o.chimney !== false && o.roofStyle !== 'flat') {
+      var ch = b.mb('brick');
+      ch.setColorHex(0xffffff);
+      ch.setMatrix(m);
+      var cxo = w * 0.28, czo = -d * 0.16;
+      ch.tube([
+        { x: cxo, y: h - 0.3, z: czo, rx: 0.30, rz: 0.26 },
+        { x: cxo, y: h + (o.roofH || 1.5) + 0.5, z: czo, rx: 0.27, rz: 0.23 },
+        { x: cxo, y: h + (o.roofH || 1.5) + 0.66, z: czo, rx: 0.32, rz: 0.28 }
+      ], 4, { u: 2, v: 3, capStart: false });
+      ch.setColorHex(0x2c2622);
+      ch.box(cxo, h + (o.roofH || 1.5) + 0.70, czo, 0.34, 0.04, 0.30, 1.4);
+      ch.setMatrix(null);
+    }
+
     /* roof */
     var roof = b.mb(roofMat);
     roof.setColorHex(o.roofColor === undefined ? 0xffffff : o.roofColor);
@@ -659,6 +699,216 @@ var LZ = LZ || {};
     if (b.col) b.col.add(C.box(x, y + 0.5, z, 1.25, 0.5, 0.45, { yaw: yaw, surface: 'wood' }));
   };
 
+  /* ------------------------------------------------------------------ */
+  /* Town dressing                                                       */
+  /*                                                                     */
+  /* The gap between this and the games it is imitating was never one big
+     thing -- it was that a Clock Town screen holds thirty objects and ours
+     held four. These are the cheap ones that fill a street: things people
+     put down and did not pick up.                                         */
+  /* ------------------------------------------------------------------ */
+
+  /* a slumped grain sack */
+  P.sack = function (b, x, y, z, o) {
+    o = o || {};
+    var s = o.scale || 1;
+    var mb = b.mb(o.mat || 'clothTan');
+    mb.setColorHex(o.color === undefined ? 0xd8c49c : o.color);
+    var yaw = o.yaw || 0;
+    var m = LZ.M4.create();
+    LZ.M4.compose(m, x, y, z, 0, yaw, 0, 1, 1, 1);
+    mb.setMatrix(m);
+    mb.tube([
+      { y: 0.00, rx: 0.30 * s, rz: 0.26 * s },
+      { y: 0.16 * s, rx: 0.33 * s, rz: 0.29 * s },
+      { y: 0.42 * s, rx: 0.30 * s, rz: 0.26 * s },
+      { y: 0.58 * s, rx: 0.18 * s, rz: 0.16 * s },
+      { y: 0.64 * s, rx: 0.10 * s, rz: 0.09 * s }
+    ], 8, { u: 1, v: 1.6, capStart: false });
+    /* the tie at the neck */
+    mb.setColorHex(0x8a6a40);
+    mb.tube([
+      { y: 0.56 * s, rx: 0.13 * s, rz: 0.12 * s },
+      { y: 0.61 * s, rx: 0.13 * s, rz: 0.12 * s }
+    ], 8, { u: 1, v: 1, capStart: false, capEnd: false });
+    mb.setMatrix(null);
+    if (b.col) b.col.add(C.cyl(x, y, z, 0.32 * s, 0.6 * s, { surface: 'wood' }));
+  };
+
+  /* a stack of split logs against a wall */
+  P.woodpile = function (b, x, y, z, o) {
+    o = o || {};
+    var s = o.scale || 1;
+    var yaw = o.yaw || 0;
+    var mb = b.mb('planksDark');
+    var m = LZ.M4.create();
+    LZ.M4.compose(m, x, y, z, 0, yaw, 0, 1, 1, 1);
+    mb.setMatrix(m);
+    var rows = 3, per = 4;
+    for (var r = 0; r < rows; r++) {
+      var n = per - r;
+      for (var i = 0; i < n; i++) {
+        mb.setColorHex(i % 2 ? 0xc2a074 : 0xa8865c);
+        var lx = (i - (n - 1) / 2) * 0.24 * s;
+        mb.tube([
+          { x: lx, y: (0.12 + r * 0.22) * s, z: -0.55 * s, r: 0.115 * s },
+          { x: lx, y: (0.12 + r * 0.22) * s, z: 0.55 * s, r: 0.115 * s }
+        ], 6, { axis: 'z', u: 1, v: 2 });
+      }
+    }
+    mb.setMatrix(null);
+    if (b.col) b.col.add(C.box(x, y + 0.32 * s, z, 0.5 * s, 0.34 * s, 0.58 * s, { yaw: yaw, surface: 'wood' }));
+  };
+
+  /* a planter box of flowers under a window */
+  P.planter = function (b, x, y, z, o) {
+    o = o || {};
+    var s = o.scale || 1;
+    var yaw = o.yaw || 0;
+    var mb = b.mb('planksDark');
+    mb.setColorHex(0xb08a58);
+    var m = LZ.M4.create();
+    LZ.M4.compose(m, x, y, z, 0, yaw, 0, 1, 1, 1);
+    mb.setMatrix(m);
+    mb.tube([
+      { y: 0, rx: 0.55 * s, rz: 0.22 * s },
+      { y: 0.26 * s, rx: 0.58 * s, rz: 0.24 * s }
+    ], 4, { u: 2, v: 1 });
+    mb.setColorHex(0x6a4e2c);
+    mb.box(0, 0.27 * s, 0, 0.98 * s, 0.04 * s, 0.36 * s, 1.4);
+    mb.setMatrix(null);
+    var lm = b.mb('leaves');
+    lm.setColorHex(0xffffff);
+    lm.setMatrix(m);
+    for (var i = 0; i < 5; i++) {
+      var px = (-0.4 + i * 0.2) * s;
+      lm.ovoid(px, 0.36 * s, (rnd(i + x) - 0.5) * 0.12 * s, 0.15 * s, 0.13 * s, 0.13 * s, 6, 4);
+    }
+    lm.setMatrix(null);
+    var fm = b.mb('petalRed');
+    fm.setColorHex(o.bloom === undefined ? 0xffffff : o.bloom);
+    fm.setMatrix(m);
+    for (var f = 0; f < 4; f++) {
+      fm.ovoid((-0.32 + f * 0.22) * s, 0.46 * s, 0, 0.07 * s, 0.05 * s, 0.07 * s, 5, 4);
+    }
+    fm.setMatrix(null);
+  };
+
+  /* a shop sign hanging from a bracket over a door */
+  P.hangingSign = function (b, x, y, z, o) {
+    o = o || {};
+    var s = o.scale || 1;
+    var yaw = o.yaw || 0;
+    var m = LZ.M4.create();
+    LZ.M4.compose(m, x, y, z, 0, yaw, 0, 1, 1, 1);
+    var mb = b.mb('metal');
+    mb.setColorHex(0x8a8f98);
+    mb.setMatrix(m);
+    /* bracket: out from the wall, then a short drop */
+    mb.tube([{ z: 0, y: 0, r: 0.035 * s }, { z: 0.62 * s, y: 0, r: 0.030 * s }], 5, { axis: 'z' });
+    mb.tube([{ z: 0.18 * s, y: 0, r: 0.022 * s }, { z: 0.56 * s, y: -0.24 * s, r: 0.020 * s }], 4);
+    mb.tube([{ z: 0.56 * s, y: 0, r: 0.016 * s }, { z: 0.56 * s, y: -0.16 * s, r: 0.016 * s }], 4);
+    mb.setMatrix(null);
+    var pm = b.mb(o.mat || 'planks');
+    pm.setColorHex(o.color === undefined ? 0xd8b878 : o.color);
+    pm.setMatrix(m);
+    pm.box(0, -0.44 * s, 0.56 * s, 0.72 * s, 0.44 * s, 0.06 * s, 1.6);
+    pm.setColorHex(0x5a4028);
+    pm.box(0, -0.44 * s, 0.60 * s, 0.50 * s, 0.22 * s, 0.02 * s, 1.6);
+    pm.setMatrix(null);
+  };
+
+  /* a line of washing strung between two poles */
+  P.laundry = function (b, x, y, z, len, o) {
+    o = o || {};
+    var yaw = o.yaw || 0;
+    var m = LZ.M4.create();
+    LZ.M4.compose(m, x, y, z, 0, yaw, 0, 1, 1, 1);
+    var wm = b.mb('planksDark');
+    wm.setColorHex(0xa88a5c);
+    wm.setMatrix(m);
+    var h = o.h || 2.0;
+    for (var e = -1; e <= 1; e += 2) {
+      wm.tube([{ x: e * len / 2, y: 0, z: 0, r: 0.07 },
+               { x: e * len / 2, y: h, z: 0, r: 0.05 }], 5, { u: 1, v: 2 });
+    }
+    /* the rope, sagging */
+    wm.setColorHex(0xd8cbb0);
+    var segs = 6;
+    for (var i = 0; i < segs; i++) {
+      var t0 = i / segs, t1 = (i + 1) / segs;
+      function sag(t) { return h - 0.16 * Math.sin(t * Math.PI); }
+      wm.tube([
+        { x: (-0.5 + t0) * len, y: sag(t0), z: 0, r: 0.018 },
+        { x: (-0.5 + t1) * len, y: sag(t1), z: 0, r: 0.018 }
+      ], 4, { axis: 'x' });
+    }
+    wm.setMatrix(null);
+    var cols = o.colors || ['clothWhite', 'clothBlue', 'clothRed'];
+    for (var g = 0; g < 4; g++) {
+      var cm = b.mb(cols[g % cols.length]);
+      cm.setColorHex(0xffffff);
+      cm.setMatrix(m);
+      var gx = (-0.34 + g * 0.22) * len;
+      var gh = 0.5 + rnd(g + x) * 0.32;
+      cm.ribbon([
+        { x: gx, y: h - 0.14, z: 0, w: 0.20 },
+        { x: gx, y: h - 0.14 - gh * 0.5, z: 0.03, w: 0.26 },
+        { x: gx, y: h - 0.14 - gh, z: 0.01, w: 0.22 }
+      ], [1, 0, 0], { v: 1.4 });
+      cm.setMatrix(null);
+    }
+    if (b.col) {
+      b.col.add(C.cyl(x - Math.cos(yaw) * len / 2, y, z + Math.sin(yaw) * len / 2, 0.12, h, { surface: 'wood' }));
+      b.col.add(C.cyl(x + Math.cos(yaw) * len / 2, y, z - Math.sin(yaw) * len / 2, 0.12, h, { surface: 'wood' }));
+    }
+  };
+
+  /* a hand cart, tipped on its shafts */
+  P.cart = function (b, x, y, z, o) {
+    o = o || {};
+    var s = o.scale || 1;
+    var yaw = o.yaw || 0;
+    var m = LZ.M4.create();
+    LZ.M4.compose(m, x, y, z, 0, yaw, 0, 1, 1, 1);
+    var mb = b.mb('planks');
+    mb.setColorHex(0xc4a274);
+    mb.setMatrix(m);
+    mb.box(0, 0.62 * s, 0, 1.5 * s, 0.10 * s, 0.9 * s, 1.6);
+    mb.box(0, 0.82 * s, -0.45 * s, 1.5 * s, 0.40 * s, 0.08 * s, 1.6);
+    mb.box(0, 0.82 * s, 0.45 * s, 1.5 * s, 0.40 * s, 0.08 * s, 1.6);
+    mb.box(-0.75 * s, 0.82 * s, 0, 0.08 * s, 0.40 * s, 0.9 * s, 1.6);
+    /* shafts down to the ground */
+    mb.setColorHex(0xa8865c);
+    for (var e = -1; e <= 1; e += 2) {
+      mb.tube([
+        { x: e * 0.32 * s, y: 0.60 * s, z: 0.45 * s, r: 0.055 * s },
+        { x: e * 0.32 * s, y: 0.10 * s, z: 1.35 * s, r: 0.045 * s }
+      ], 5);
+    }
+    mb.setMatrix(null);
+    var wm = b.mb('planksDark');
+    wm.setColorHex(0x8a6a44);
+    wm.setMatrix(m);
+    for (var w2 = -1; w2 <= 1; w2 += 2) {
+      wm.tube([
+        { x: w2 * 0.80 * s, y: 0.42 * s, z: 0, ry: 0.42 * s, rz: 0.42 * s },
+        { x: w2 * 0.90 * s, y: 0.42 * s, z: 0, ry: 0.42 * s, rz: 0.42 * s }
+      ], 9, { axis: 'x', u: 2, v: 1 });
+      wm.setColorHex(0x6a4e2c);
+      for (var sp = 0; sp < 4; sp++) {
+        var a2 = sp / 4 * Math.PI;
+        wm.tube([
+          { x: w2 * 0.86 * s, y: 0.42 * s + Math.sin(a2) * 0.38 * s, z: Math.cos(a2) * 0.38 * s, r: 0.035 * s },
+          { x: w2 * 0.86 * s, y: 0.42 * s - Math.sin(a2) * 0.38 * s, z: -Math.cos(a2) * 0.38 * s, r: 0.035 * s }
+        ], 4, { axis: 'x' });
+      }
+      wm.setColorHex(0x8a6a44);
+    }
+    wm.setMatrix(null);
+    if (b.col) b.col.add(C.box(x, y + 0.6 * s, z, 0.9 * s, 0.5 * s, 0.55 * s, { yaw: yaw, surface: 'wood' }));
+  };
+
   P.bridge = function (b, x, y, z, len, o) {
     o = o || {};
     var yaw = o.yaw || 0;
@@ -821,18 +1071,40 @@ var LZ = LZ || {};
 
   P.lampPost = function (b, x, y, z, o) {
     o = o || {};
-    var mb = b.mb('metal');
-    mb.setColorHex(0x6a6a72);
     var h = o.h || 2.7;
-    mb.cylinder(x, y, z, 0.11, 0.07, h, 6, false, 2.0);
-    mb.box(x, y + h + 0.24, z, 0.34, 0.42, 0.34, 2.0);
-    var glass = b.mb('gemGreen');
-    glass.setColorHex(0xffe8a0);
-    glass.box(x, y + h + 0.24, z, 0.26, 0.32, 0.26, 2.0);
-    var top = b.mb('metal');
-    top.setColorHex(0x5a5a62);
-    top.taper(x, y + h + 0.44, z, 0.40, 0.40, 0.06, 0.06, 0.22, 0, 0, 2.0);
-    if (b.col) b.col.add(C.cyl(x, y, z, 0.14, h, {}));
+    var mb = b.mb('metal');
+    mb.setColorHex(0x8e9099);
+    /* a footed post with a swell at the base, not a grey stick */
+    mb.tube([
+      { x: x, y: y, z: z, r: 0.20 },
+      { x: x, y: y + 0.14, z: z, r: 0.17 },
+      { x: x, y: y + 0.30, z: z, r: 0.105 },
+      { x: x, y: y + h * 0.6, z: z, r: 0.075 },
+      { x: x, y: y + h, z: z, r: 0.065 }
+    ], 6, { u: 1, v: 3, capStart: false });
+    /* the lantern cage: four corner bars and a cap */
+    mb.setColorHex(0x6e7078);
+    for (var c = 0; c < 4; c++) {
+      var a2 = c / 4 * M.TAU + Math.PI / 4;
+      mb.tube([
+        { x: x + Math.sin(a2) * 0.19, y: y + h + 0.04, z: z + Math.cos(a2) * 0.19, r: 0.028 },
+        { x: x + Math.sin(a2) * 0.19, y: y + h + 0.46, z: z + Math.cos(a2) * 0.19, r: 0.028 }
+      ], 4);
+    }
+    mb.tube([
+      { x: x, y: y + h + 0.02, z: z, r: 0.26 },
+      { x: x, y: y + h + 0.08, z: z, r: 0.22 }
+    ], 8, { u: 1, v: 1 });
+    mb.tube([
+      { x: x, y: y + h + 0.46, z: z, r: 0.30 },
+      { x: x, y: y + h + 0.62, z: z, r: 0.16 },
+      { x: x, y: y + h + 0.72, z: z, r: 0.02 }
+    ], 8, { u: 1, v: 1, capStart: false });
+    /* the flame inside, self-lit so it reads at dusk */
+    var glass = b.mb('glow');
+    glass.setColorHex(o.lightColor === undefined ? 0xffd88a : o.lightColor);
+    glass.ovoid(x, y + h + 0.25, z, 0.14, 0.19, 0.14, 7, 5);
+    if (b.col) b.col.add(C.cyl(x, y, z, 0.16, h, {}));
   };
 
   P.banner = function (b, x, y, z, o) {
