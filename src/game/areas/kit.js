@@ -65,6 +65,13 @@ var LZ = LZ || {};
     var seed = o.seed || 1;
     var rockAt = o.rockAt === undefined ? 0.52 : o.rockAt;
     var base = K.rolling(o);
+    var paths = o.paths || [];
+    /* A road has to leave the valley through a gap in the ridge, not over
+       the top of it. Without this the rim rise is applied to the road as
+       well and the only way out of town is up a hillside no cart could
+       climb -- which is exactly how it played. */
+    var passW = o.passWidth === undefined ? 4.0 : o.passWidth;
+    var passFlare = o.passFlare === undefined ? 10 : o.passFlare;
     return function (x, z) {
       var r = base(x, z);
       var d = Math.sqrt(x * x + z * z);
@@ -77,8 +84,17 @@ var LZ = LZ || {};
            how tall this stretch of the ridge gets, a second roughens it */
         var crown = 0.62 + 0.58 * M.valueNoise2(Math.atan2(z, x) * 1.9 + 11, 4.5, seed + 23);
         var rough = M.ridge2(x * 0.055, z * 0.055, 3, seed + 7);
-        r.h += rise * wall * crown + rough * k * k * 7.5;
-        if (k > rockAt) r.t = o.wallMat === undefined ? 2 : o.wallMat;
+        var lift = rise * wall * crown + rough * k * k * 7.5;
+        /* cut a pass wherever a road crosses the ridge */
+        var mouth = 1;
+        for (var pi = 0; pi < paths.length; pi++) {
+          var dp = K.distToPath(x, z, paths[pi].pts);
+          var m = M.smoothstep(passW, passW + passFlare, dp);
+          if (m < mouth) mouth = m;
+        }
+        lift *= mouth;
+        r.h += lift;
+        if (k > rockAt && mouth > 0.55) r.t = o.wallMat === undefined ? 2 : o.wallMat;
       }
       return r;
     };
